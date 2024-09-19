@@ -43,7 +43,6 @@ const OrderManagementPage = () => {
     const message = `Hi, your order id is ${orderId}, you can check it at http://localhost:3000/tracking`;
     const encodedMessage = encodeURIComponent(message);
 
-    // Generate the full WhatsApp link
     return `${baseUrl}${phone.replace(/\D/g, "")}?text=${encodedMessage}`;
   };
 
@@ -95,6 +94,51 @@ const OrderManagementPage = () => {
       setSelectedOrder(null); // Close modal
     } catch (error) {
       console.error("Error updating order status:", error);
+    }
+  };
+
+  const handleAssembleChange = async (productId, isAssembled) => {
+    const token = localStorage.getItem("access_token");
+
+    try {
+      // Make API call to update the assembly status of the product
+      await axios.patch(
+        `http://localhost:8000/products/${productId}?assemble=${isAssembled}`,
+        null,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Update the local state to reflect the change in UI
+      const updatedOrders = orders.map((order) => {
+        if (order.order_id === selectedOrder.order_id) {
+          const updatedProducts = order.products.map((product) =>
+            product.id === productId
+              ? { ...product, is_assembled: isAssembled }
+              : product
+          );
+          return { ...order, products: updatedProducts };
+        }
+        return order;
+      });
+
+      // Update both the selectedOrder and orders state
+      const updatedSelectedOrder = {
+        ...selectedOrder,
+        products: selectedOrder.products.map((product) =>
+          product.id === productId
+            ? { ...product, is_assembled: isAssembled }
+            : product
+        ),
+      };
+
+      setOrders(updatedOrders);
+      setSelectedOrder(updatedSelectedOrder); // Update the selected order to reflect in the modal
+    } catch (error) {
+      console.error("Error updating product assembly status:", error);
     }
   };
 
@@ -181,7 +225,7 @@ const OrderManagementPage = () => {
       {/* Order Detail Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
+          <div className="bg-white p-10 rounded-lg shadow-lg max-w-2xl w-full">
             <h2 className="text-2xl font-bold mb-4">
               Order Details: {selectedOrder.order_id}
             </h2>
@@ -204,6 +248,7 @@ const OrderManagementPage = () => {
                   <th className="px-4 py-2">Price</th>
                   <th className="px-4 py-2">Quantity</th>
                   <th className="px-4 py-2">Amount</th>
+                  <th className="px-4 py-2">Assembled</th>
                   <th className="px-4 py-2">Options</th>
                 </tr>
               </thead>
@@ -215,13 +260,22 @@ const OrderManagementPage = () => {
                     <td className="border px-4 py-2">{product.quantity}</td>
                     <td className="border px-4 py-2">{product.amount}</td>
                     <td className="border px-4 py-2">
+                      <input
+                        type="checkbox"
+                        checked={product.is_assembled}
+                        onChange={(e) =>
+                          handleAssembleChange(product.id, e.target.checked)
+                        }
+                      />
+                    </td>
+                    <td className="border px-4 py-2">
                       {product.options.length > 0
                         ? product.options.map((opt) => (
                             <div key={opt.id}>
                               {opt.option_name}: {opt.variant}
                             </div>
                           ))
-                        : "None"}
+                        : "-"}
                     </td>
                   </tr>
                 ))}
@@ -229,11 +283,11 @@ const OrderManagementPage = () => {
             </table>
             <a
               href={generateWhatsAppLink(
-                "+7 (705) 723-8447",
-                "202949518785578"
+                selectedOrder.customer.phone,
+                selectedOrder.order_id
               )}
-              target="_blank" // Open in a new tab
-              rel="noopener noreferrer" // Security reasons
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-blue-500 underline"
             >
               Send WhatsApp message
