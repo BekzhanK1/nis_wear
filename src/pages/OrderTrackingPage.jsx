@@ -1,38 +1,11 @@
 import React, { useState } from "react";
+import axios from "axios";
 
 const OrderTrackingPage = () => {
   const [orderId, setOrderId] = useState("");
   const [loading, setLoading] = useState(false);
   const [orderDetails, setOrderDetails] = useState(null);
   const [isError, setIsError] = useState(false);
-
-  // Dummy order data for simulation
-  const orders = {
-    123: {
-      status: "shipped",
-      totalAmount: 70,
-      products: [
-        { name: "T-Shirt", quantity: 2, price: 20 },
-        { name: "Shoes", quantity: 1, price: 30 },
-      ],
-    },
-    456: {
-      status: "delivered",
-      totalAmount: 120,
-      products: [
-        { name: "Jacket", quantity: 1, price: 80 },
-        { name: "Jeans", quantity: 2, price: 40 },
-      ],
-    },
-    789: {
-      status: "processing",
-      totalAmount: 50,
-      products: [
-        { name: "Hat", quantity: 1, price: 15 },
-        { name: "Gloves", quantity: 2, price: 35 },
-      ],
-    },
-  };
 
   const statuses = {
     new: "Order Placed 🆕",
@@ -43,19 +16,27 @@ const OrderTrackingPage = () => {
     canceled: "Canceled ❌",
   };
 
-  const handleTrackOrder = () => {
+  const handleTrackOrder = async () => {
     setLoading(true);
-    setTimeout(() => {
-      // Simulate fetching data by order ID
-      if (orders[orderId]) {
-        setOrderDetails(orders[orderId]);
-        setIsError(false);
-      } else {
-        setOrderDetails(null); // No order found
-        setIsError(true);
-      }
-      setLoading(false);
-    }, 2000); // Simulating a 2-second loading delay
+    setIsError(false);
+
+    try {
+      // API call to get order details by order ID
+      const response = await axios.get(
+        `http://localhost:8000/order-tracking/${orderId}`
+      );
+
+      setOrderDetails(response.data); // Set order details from API response
+      setIsError(false);
+    } catch (error) {
+      console.error("Error fetching order details:", error);
+      setOrderDetails(null); // Reset order details if error
+      setIsError(true); // Set error state to true if API call fails
+    } finally {
+      setLoading(false); // Stop loading animation
+    }
+
+    // Hide the error message after 5 seconds
     setTimeout(() => {
       setIsError(false);
     }, 5000);
@@ -107,22 +88,74 @@ const OrderTrackingPage = () => {
           <p className="text-lg mb-4">
             Total Amount:{" "}
             <span className="font-semibold text-indigo-600">
-              ${orderDetails.totalAmount}
+              ${orderDetails.total_amount}
             </span>
           </p>
-          <h3 className="text-2xl font-bold mb-4">Products</h3>
-          <ul>
-            {orderDetails.products.map((product, index) => (
-              <li key={index} className="mb-2">
-                <span className="font-semibold">{product.name}</span> -{" "}
-                {product.quantity} x ${product.price}
+
+          {/* Display all status changes */}
+          <h3 className="text-2xl font-bold mb-4">Status Changes</h3>
+          <ul className="list-disc list-inside">
+            {orderDetails.status_changes.map((change) => (
+              <li key={change.id} className="mb-2">
+                <span className="font-semibold">{statuses[change.status]}</span>{" "}
+                - {new Date(change.created_at).toLocaleString()}
               </li>
             ))}
           </ul>
+          <h3 className="text-2xl font-bold mb-4">Products</h3>
+          <ul>
+            {orderDetails.products.map((product, index) => (
+              <li
+                key={index}
+                className="mb-4 bg-gray-50 p-4 rounded-lg shadow-md"
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <span className="font-semibold text-lg">
+                      {product.name}
+                    </span>{" "}
+                    <span className="text-sm text-gray-500">
+                      ({product.sku})
+                    </span>
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-semibold">Quantity: </span>
+                    {product.quantity}
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-semibold">Price: </span>$
+                    {product.price}
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-semibold">Amount: </span>$
+                    {product.amount}
+                  </div>
+                </div>
+
+                {/* Include options if they exist */}
+                {product.options.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="font-semibold text-indigo-600">Options:</h4>
+                    <ul className="ml-4 mt-2 space-y-1">
+                      {product.options.map((option) => (
+                        <li
+                          key={option.id}
+                          className="bg-indigo-100 text-indigo-800 rounded-full px-3 py-1 text-sm font-medium inline-block"
+                        >
+                          {option.option_name}: {option.variant}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+
           <p className="text-lg mt-4 text-gray-600">
             Do you have any questions? Contact us:{" "}
             <span className="text-indigo-500 font-bold">
-              bkimadieff@gmail.com
+              support@example.com
             </span>
           </p>
         </div>
