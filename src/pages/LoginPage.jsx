@@ -1,4 +1,3 @@
-// src/LoginPage.js
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getToken } from "../utils/apiService";
@@ -30,13 +29,15 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="bg-white p-10 rounded-lg shadow-2xl w-full max-w-md transform transition-transform duration-500 hover:-translate-y-1">
+        <h2 className="text-3xl font-bold mb-8 text-center text-indigo-700">
+          Welcome Back
+        </h2>
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
+          <div className="mb-6">
             <label
-              className="block text-gray-700 text-sm font-bold mb-2"
+              className="block text-gray-700 text-sm font-semibold mb-2"
               htmlFor="username"
             >
               Username
@@ -46,15 +47,15 @@ const LoginPage = () => {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-500"
+              className="w-full p-3 border-2 border-indigo-300 rounded-lg bg-gradient-to-r from-indigo-50 to-white focus:outline-none focus:ring-4 focus:ring-indigo-200 shadow-md transition-all duration-300 ease-in-out"
               placeholder="Enter your username"
               required
             />
           </div>
 
-          <div className="mb-6">
+          <div className="mb-8">
             <label
-              className="block text-gray-700 text-sm font-bold mb-2"
+              className="block text-gray-700 text-sm font-semibold mb-2"
               htmlFor="password"
             >
               Password
@@ -64,7 +65,7 @@ const LoginPage = () => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring focus:border-blue-500"
+              className="w-full p-3 border-2 border-indigo-300 rounded-lg bg-gradient-to-r from-indigo-50 to-white focus:outline-none focus:ring-4 focus:ring-indigo-200 shadow-md transition-all duration-300 ease-in-out"
               placeholder="Enter your password"
               required
             />
@@ -73,7 +74,7 @@ const LoginPage = () => {
           <div className="flex items-center justify-between">
             <button
               type="submit"
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 ease-in-out transform hover:-translate-y-1"
             >
               Sign In
             </button>
@@ -87,7 +88,7 @@ const LoginPage = () => {
               isError
                 ? "bg-red-100 border-red-500 text-red-700"
                 : "bg-green-100 border-green-500 text-green-700"
-            } border-l-4 p-4 mt-4`}
+            } border-l-4 p-4 mt-6 shadow-lg rounded-lg transition-all duration-300 ease-in-out`}
             role="alert"
           >
             <p className="font-bold">{isError ? "Error" : "Success"}</p>

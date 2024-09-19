@@ -6,6 +6,7 @@ import reportWebVitals from "./reportWebVitals";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import OrderManagementPage from "./pages/OrderManagementPage";
+import OrderTrackingPage from "./pages/OrderTrackingPage";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
@@ -14,6 +15,7 @@ root.render(
       <Route path="/" element={<App />} />
       <Route path="/login" element={<LoginPage />} />{" "}
       <Route path="/orders" element={<OrderManagementPage />} />{" "}
+      <Route path="/tracking" element={<OrderTrackingPage />} />{" "}
       {/* Example additional route */}
     </Routes>
   </Router>

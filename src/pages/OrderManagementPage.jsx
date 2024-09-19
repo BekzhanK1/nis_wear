@@ -8,14 +8,16 @@ const OrderManagementPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null); // For popup modal
-
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailBody, setEmailBody] = useState("");
+  const [alert, setAlert] = useState(false);
   const statuses = [
+    { name: "canceled", emoji: "❌" },
     { name: "new", emoji: "🆕" },
     { name: "paid", emoji: "💵" },
     { name: "processing", emoji: "🔄" },
     { name: "shipped", emoji: "📦" },
     { name: "delivered", emoji: "✅" },
-    { name: "canceled", emoji: "❌" },
   ];
 
   useEffect(() => {
@@ -202,7 +204,7 @@ const OrderManagementPage = () => {
                               </p>
                               <p>
                                 <strong>Total Amount:</strong>{" "}
-                                {order.total_amount}
+                                {order.total_amount} KZT
                               </p>
                               <p>
                                 <strong>Payment System:</strong>{" "}
@@ -229,17 +231,22 @@ const OrderManagementPage = () => {
             <h2 className="text-2xl font-bold mb-4">
               Order Details: {selectedOrder.order_id}
             </h2>
-            <p>
-              <strong>Customer:</strong> {selectedOrder.customer.name} (
-              {selectedOrder.customer.phone})
+            <p className="text-lg">
+              <strong>Customer:</strong> {selectedOrder.customer.name}
             </p>
+            <p className="text-lg">
+              <strong>Phone:</strong> {selectedOrder.customer.phone}
+            </p>
+            <p className="text-lg">
+              <strong>Email:</strong> {selectedOrder.customer.email}
+            </p>
+
             <p>
-              <strong>Total Amount:</strong> {selectedOrder.total_amount}
+              <strong>Total Amount:</strong> {selectedOrder.total_amount} KZT
             </p>
             <p>
               <strong>Payment System:</strong> {selectedOrder.payment_system}
             </p>
-
             <h3 className="text-lg font-bold mt-4">Products</h3>
             <table className="table-auto w-full mb-4">
               <thead>
@@ -306,13 +313,146 @@ const OrderManagementPage = () => {
                 </option>
               ))}
             </select>
-
             <button
               onClick={closeOrderModal}
-              className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-700"
+              className="mt-4 mr-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 px-4 rounded-lg hover:from-purple-600 hover:to-pink-600"
             >
               Close
             </button>
+            <button
+              onClick={() => setIsEmailModalOpen(true)}
+              className="mt-4 mr-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-2 px-4 rounded-lg hover:from-yellow-600 hover:to-orange-600"
+            >
+              Send Email
+            </button>
+            <button
+              onClick={() =>
+                handleStatusChange(
+                  selectedOrder.order_id,
+                  statuses[
+                    statuses.findIndex(
+                      (status) => status.name === selectedOrder.status
+                    ) + 1
+                  ]?.name
+                )
+              }
+              className={`mt-4 bg-gradient-to-r from-green-500 to-blue-500 text-white py-2 px-4 rounded-lg hover:from-green-600 hover:to-blue-600 ${
+                selectedOrder.status === statuses[statuses.length - 1].name ||
+                selectedOrder.status === "canceled"
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+              }`}
+              disabled={
+                selectedOrder.status === statuses[statuses.length - 1].name ||
+                selectedOrder.status === "canceled"
+              }
+            >
+              {selectedOrder.status === statuses[statuses.length - 1].name ||
+              selectedOrder.status === "canceled"
+                ? "No further steps"
+                : `Next step ➡️ ${
+                    statuses[
+                      statuses.findIndex(
+                        (status) => status.name === selectedOrder.status
+                      ) + 1
+                    ]?.name
+                  }`}
+            </button>
+            {alert && (
+              <div
+                class="p-4 mb-4 mt-4 text-sm text-green-400 rounded-lg bg-green-50 border border-green-200"
+                role="alert"
+              >
+                <span class="font-medium">Email sent successfully to </span>{" "}
+                <strong>{selectedOrder.customer.email}</strong>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {isEmailModalOpen && (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+            <h2 className="text-2xl font-bold mb-4">Send Email</h2>
+
+            <div className="mb-4">
+              <label
+                className="block text-gray-700 font-bold mb-2"
+                htmlFor="to"
+              >
+                To:
+              </label>
+              <input
+                id="to"
+                type="text"
+                className="w-full p-2 border rounded-lg"
+                value={selectedOrder.customer.email}
+                readOnly
+              />
+            </div>
+
+            <div className="mb-4">
+              <label
+                className="block text-gray-700 font-bold mb-2"
+                htmlFor="subject"
+              >
+                Subject:
+              </label>
+              <input
+                id="subject"
+                type="text"
+                className="w-full p-2 border rounded-lg"
+                value={`nis-wear.kz(Order id: ${selectedOrder.order_id})`}
+                readOnly
+              />
+            </div>
+
+            <div className="mb-4">
+              <label
+                className="block text-gray-700 font-bold mb-2"
+                htmlFor="body"
+              >
+                Body:
+              </label>
+              <textarea
+                id="body"
+                className="w-full p-2 border rounded-lg"
+                rows="4"
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+                placeholder="Write your message here..."
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => setIsEmailModalOpen(false)}
+                className="mr-4 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600"
+              >
+                Close
+              </button>
+
+              <button
+                onClick={() => {
+                  // You can integrate the email sending function here
+                  console.log(
+                    `Sending email to: ${selectedOrder.customer.email}`
+                  );
+                  console.log(
+                    `Email subject: nis-wear.kz(Order id: ${selectedOrder.order_id})`
+                  );
+                  setAlert(true);
+                  console.log(`Email body: ${emailBody}`);
+                  setIsEmailModalOpen(false);
+                  setTimeout(() => {
+                    setAlert(false);
+                  }, 3000);
+                }}
+                className="bg-gradient-to-r from-green-500 to-blue-500 text-white py-2 px-4 rounded-lg hover:from-green-600 hover:to-blue-600"
+              >
+                Send
+              </button>
+            </div>
           </div>
         </div>
       )}
