@@ -44,7 +44,7 @@ const OrderManagementPage = () => {
 
   const generateWhatsAppLink = (phone, orderId) => {
     const baseUrl = "https://wa.me/";
-    const message = `Hi, your order id is ${orderId}, you can check it at http://localhost:3000/tracking`;
+    const message = `Hi, your order id is ${orderId}, you can check it at http://38.107.234.128:3000/tracking`;
     const encodedMessage = encodeURIComponent(message);
 
     return `${baseUrl}${phone.replace(/\D/g, "")}?text=${encodedMessage}`;
@@ -59,7 +59,7 @@ const OrderManagementPage = () => {
 
     try {
       await axios.patch(
-        `http://localhost:8000/orders/${draggableId}?status=${newStatus}`,
+        `http://38.107.234.128:8000/orders/${draggableId}?status=${newStatus}`,
         null,
         {
           headers: {
@@ -98,7 +98,7 @@ const OrderManagementPage = () => {
 
     try {
       await axios.patch(
-        `http://localhost:8000/orders/${orderId}?status=${newStatus}`,
+        `http://38.107.234.128:8000/orders/${orderId}?status=${newStatus}`,
         null,
         {
           headers: {
@@ -122,7 +122,7 @@ const OrderManagementPage = () => {
 
     try {
       await axios.patch(
-        `http://localhost:8000/products/${productId}?assemble=${isAssembled}`,
+        `http://38.107.234.128:8000/products/${productId}?assemble=${isAssembled}`,
         null,
         {
           headers: {
@@ -511,7 +511,7 @@ const OrderManagementPage = () => {
                 onClick={() => {
                   try {
                     const response = axios.post(
-                      `http://localhost:8000/send-email`,
+                      `http://38.107.234.128:8000/send-email`,
                       {
                         email: selectedOrder.customer.email,
                         subject: `nis-wear.kz(Order id: ${selectedOrder.order_id})`,

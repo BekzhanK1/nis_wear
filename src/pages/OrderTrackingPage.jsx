@@ -24,7 +24,7 @@ const OrderTrackingPage = () => {
     try {
       // API call to get order details by order ID
       const response = await axios.get(
-        `http://localhost:8000/order-tracking/${orderId}`
+        `http://38.107.234.128:8000/order-tracking/${orderId}`
       );
 
       setOrderDetails(response.data); // Set order details from API response
