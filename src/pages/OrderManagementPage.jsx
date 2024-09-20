@@ -7,17 +7,18 @@ const OrderManagementPage = () => {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedOrder, setSelectedOrder] = useState(null); // For popup modal
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [emailBody, setEmailBody] = useState("");
   const [alert, setAlert] = useState(false);
+  const [activeTab, setActiveTab] = useState("activeOrders"); // Added for tab management
   const statuses = [
-    { name: "canceled", emoji: "❌" },
     { name: "new", emoji: "🆕" },
     { name: "paid", emoji: "💵" },
     { name: "processing", emoji: "🔄" },
     { name: "shipped", emoji: "📦" },
     { name: "delivered", emoji: "✅" },
+    { name: "canceled", emoji: "❌" },
   ];
 
   useEffect(() => {
@@ -103,7 +104,6 @@ const OrderManagementPage = () => {
     const token = localStorage.getItem("access_token");
 
     try {
-      // Make API call to update the assembly status of the product
       await axios.patch(
         `http://localhost:8000/products/${productId}?assemble=${isAssembled}`,
         null,
@@ -114,7 +114,6 @@ const OrderManagementPage = () => {
         }
       );
 
-      // Update the local state to reflect the change in UI
       const updatedOrders = orders.map((order) => {
         if (order.order_id === selectedOrder.order_id) {
           const updatedProducts = order.products.map((product) =>
@@ -127,7 +126,6 @@ const OrderManagementPage = () => {
         return order;
       });
 
-      // Update both the selectedOrder and orders state
       const updatedSelectedOrder = {
         ...selectedOrder,
         products: selectedOrder.products.map((product) =>
@@ -138,7 +136,7 @@ const OrderManagementPage = () => {
       };
 
       setOrders(updatedOrders);
-      setSelectedOrder(updatedSelectedOrder); // Update the selected order to reflect in the modal
+      setSelectedOrder(updatedSelectedOrder);
     } catch (error) {
       console.error("Error updating product assembly status:", error);
     }
@@ -160,67 +158,101 @@ const OrderManagementPage = () => {
   if (error) return <p>{error}</p>;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <h1 className="text-3xl font-bold mb-8 text-blue-700">
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
+      <h1 className="text-3xl font-bold mb-4 text-blue-700 text-center">
         Order Management
       </h1>
+
+      {/* Tabs */}
+      <div className="flex justify-center mb-4">
+        <button
+          className={`px-4 py-2 font-bold rounded-l-lg ${
+            activeTab === "activeOrders"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-300 text-gray-700"
+          }`}
+          onClick={() => setActiveTab("activeOrders")}
+        >
+          Active Orders
+        </button>
+        <button
+          className={`px-4 py-2 font-bold rounded-r-lg ${
+            activeTab === "canceledOrders"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-300 text-gray-700"
+          }`}
+          onClick={() => setActiveTab("canceledOrders")}
+        >
+          Canceled Orders
+        </button>
+      </div>
+
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-3 gap-4">
-          {statuses.map((status) => (
-            <Droppable droppableId={status.name} key={status.name}>
-              {(provided) => (
-                <div
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  className="bg-white p-4 rounded-lg shadow-md"
-                >
-                  <h2 className="text-xl font-bold mb-4 capitalize text-blue-500">
-                    {status.emoji} {status.name} Orders
-                  </h2>
-                  {groupOrdersByStatus(status.name).length === 0 ? (
-                    <p>No orders in this status.</p>
-                  ) : (
-                    <ul>
-                      {groupOrdersByStatus(status.name).map((order, index) => (
-                        <Draggable
-                          key={order.order_id}
-                          draggableId={String(order.order_id)}
-                          index={index}
-                        >
-                          {(provided) => (
-                            <li
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              ref={provided.innerRef}
-                              className="bg-gray-200 p-4 mb-2 rounded-lg shadow-sm cursor-pointer hover:bg-gray-300"
-                              onClick={() => openOrderModal(order)}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {statuses
+            .filter((status) =>
+              activeTab === "canceledOrders"
+                ? status.name === "canceled"
+                : status.name !== "canceled"
+            )
+            .map((status) => (
+              <Droppable droppableId={status.name} key={status.name}>
+                {(provided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="bg-white p-4 rounded-lg shadow-md"
+                  >
+                    <h2 className="text-xl font-bold mb-4 capitalize text-blue-500">
+                      {status.emoji} {status.name} Orders
+                    </h2>
+                    {groupOrdersByStatus(status.name).length === 0 ? (
+                      <p>No orders in this status.</p>
+                    ) : (
+                      <ul>
+                        {groupOrdersByStatus(status.name).map(
+                          (order, index) => (
+                            <Draggable
+                              key={order.order_id}
+                              draggableId={String(order.order_id)}
+                              index={index}
                             >
-                              <p>
-                                <strong>Order ID:</strong> {order.order_id}
-                              </p>
-                              <p>
-                                <strong>Customer:</strong> {order.customer.name}{" "}
-                                ({order.customer.phone})
-                              </p>
-                              <p>
-                                <strong>Total Amount:</strong>{" "}
-                                {order.total_amount} KZT
-                              </p>
-                              <p>
-                                <strong>Payment System:</strong>{" "}
-                                {order.payment_system}
-                              </p>
-                            </li>
-                          )}
-                        </Draggable>
-                      ))}
-                    </ul>
-                  )}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          ))}
+                              {(provided) => (
+                                <li
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  ref={provided.innerRef}
+                                  className="bg-gray-200 p-4 mb-2 rounded-lg shadow-sm cursor-pointer hover:bg-gray-300"
+                                  onClick={() => openOrderModal(order)}
+                                >
+                                  <p>
+                                    <strong>Order ID:</strong> {order.order_id}
+                                  </p>
+                                  <p>
+                                    <strong>Customer:</strong>{" "}
+                                    {order.customer.name} (
+                                    {order.customer.phone})
+                                  </p>
+                                  <p>
+                                    <strong>Total Amount:</strong>{" "}
+                                    {order.total_amount} KZT
+                                  </p>
+                                  <p>
+                                    <strong>Payment System:</strong>{" "}
+                                    {order.payment_system}
+                                  </p>
+                                </li>
+                              )}
+                            </Draggable>
+                          )
+                        )}
+                      </ul>
+                    )}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            ))}
         </div>
       </DragDropContext>
 
@@ -360,16 +392,17 @@ const OrderManagementPage = () => {
             </button>
             {alert && (
               <div
-                class="p-4 mb-4 mt-4 text-sm text-green-400 rounded-lg bg-green-50 border border-green-200"
+                className="p-4 mb-4 mt-4 text-sm text-green-400 rounded-lg bg-green-50 border border-green-200"
                 role="alert"
               >
-                <span class="font-medium">Email sent successfully to </span>{" "}
+                <span className="font-medium">Email sent successfully to </span>{" "}
                 <strong>{selectedOrder.customer.email}</strong>
               </div>
             )}
           </div>
         </div>
       )}
+
       {isEmailModalOpen && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
@@ -433,7 +466,6 @@ const OrderManagementPage = () => {
               </button>
 
               <button
-                try
                 onClick={() => {
                   try {
                     const response = axios.post(
