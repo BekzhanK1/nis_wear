@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import dayjs from "dayjs";
 
 const OrderTrackingPage = () => {
   const [orderId, setOrderId] = useState("");
@@ -75,7 +76,7 @@ const OrderTrackingPage = () => {
 
       {/* Show order details if found */}
       {!loading && orderDetails && (
-        <div className="mt-10 bg-white p-8 rounded-lg shadow-xl max-w-xl mx-auto transition-transform transform hover:-translate-y-1 duration-500">
+        <div className="mt-10 bg-white p-8 rounded-lg shadow-xl max-w-2xl mx-auto transition-transform transform hover:-translate-y-1 duration-500">
           <h3 className="text-2xl font-bold mb-4 text-green-600 drop-shadow-md">
             Order Status
           </h3>
@@ -85,6 +86,15 @@ const OrderTrackingPage = () => {
               {statuses[orderDetails.status]}
             </span>
           </p>
+          {orderDetails.status !== "shipped" &&
+            orderDetails.status !== "delivered" && (
+              <p className="text-lg mb-4">
+                Shipping date:{" "}
+                <span className="font-semibold text-indigo-600">
+                  {dayjs(orderDetails.shipping_date).format("DD-MM-YYYY")}
+                </span>
+              </p>
+            )}
           <p className="text-lg mb-4">
             Total Amount:{" "}
             <span className="font-semibold text-indigo-600">
@@ -123,12 +133,12 @@ const OrderTrackingPage = () => {
                     {product.quantity}
                   </div>
                   <div className="text-sm">
-                    <span className="font-semibold">Price: </span>$
-                    {product.price}
+                    <span className="font-semibold">Price: </span>
+                    {product.price} ₸
                   </div>
                   <div className="text-sm">
-                    <span className="font-semibold">Amount: </span>$
-                    {product.amount}
+                    <span className="font-semibold">Amount: </span>
+                    {product.amount} ₸
                   </div>
                 </div>
 

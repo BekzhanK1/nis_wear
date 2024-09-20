@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { fetchOrders } from "../utils/apiService";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import axios from "axios";
+import dayjs from "dayjs";
 
 const OrderManagementPage = () => {
   const [orders, setOrders] = useState([]);
@@ -13,12 +14,12 @@ const OrderManagementPage = () => {
   const [alert, setAlert] = useState(false);
   const [activeTab, setActiveTab] = useState("activeOrders"); // Added for tab management
   const statuses = [
+    { name: "canceled", emoji: "❌" },
     { name: "new", emoji: "🆕" },
     { name: "paid", emoji: "💵" },
     { name: "processing", emoji: "🔄" },
     { name: "shipped", emoji: "📦" },
     { name: "delivered", emoji: "✅" },
-    { name: "canceled", emoji: "❌" },
   ];
 
   useEffect(() => {
@@ -75,6 +76,22 @@ const OrderManagementPage = () => {
       console.error("Error updating order status:", error);
     }
   };
+
+  const getNextShippingSunday = (currentDate) => {
+    const startDate = dayjs("2024-01-07"); // Assume this is a known start date for shipping Sundays
+    const today = dayjs(currentDate);
+
+    const weeksSinceStart = today.diff(startDate, "week", true); // Get the number of weeks since the start date
+    const isCurrentShippingWeek = Math.floor(weeksSinceStart) % 2 === 0;
+
+    const nextShippingSunday = isCurrentShippingWeek
+      ? today.add((7 - today.day()) % 7, "day") // This Sunday if it's shipping week
+      : today.add((14 - today.day()) % 14, "day"); // The next Sunday in two weeks
+
+    return nextShippingSunday;
+  };
+  const closestShippingDate = getNextShippingSunday(new Date());
+  const nextShippingDate = closestShippingDate.add(2, "week"); // Add 2 weeks to get the next shipping date
 
   const handleStatusChange = async (orderId, newStatus) => {
     const token = localStorage.getItem("access_token");
@@ -154,6 +171,24 @@ const OrderManagementPage = () => {
     setSelectedOrder(null);
   };
 
+  const filteredOrders = orders.filter((order) => {
+    const orderShippingDate = dayjs(order.shipping_date);
+
+    if (activeTab === "nextShippingOrders") {
+      return orderShippingDate.isSame(nextShippingDate, "day");
+    }
+
+    if (activeTab === "activeOrders") {
+      return orderShippingDate.isSame(closestShippingDate, "day");
+    }
+
+    if (activeTab === "canceledOrders") {
+      return order.status === "canceled";
+    }
+
+    return false;
+  });
+
   if (isLoading) return <p>Loading orders...</p>;
   if (error) return <p>{error}</p>;
 
@@ -173,7 +208,17 @@ const OrderManagementPage = () => {
           }`}
           onClick={() => setActiveTab("activeOrders")}
         >
-          Active Orders
+          Active Orders {closestShippingDate.format("MMM DD")}
+        </button>
+        <button
+          className={`px-4 py-2 font-bold ${
+            activeTab === "nextShippingOrders"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-300 text-gray-700"
+          }`}
+          onClick={() => setActiveTab("nextShippingOrders")}
+        >
+          Next shipping orders {nextShippingDate.format("MMM DD")}
         </button>
         <button
           className={`px-4 py-2 font-bold rounded-r-lg ${
@@ -190,10 +235,9 @@ const OrderManagementPage = () => {
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {statuses
-            .filter((status) =>
-              activeTab === "canceledOrders"
-                ? status.name === "canceled"
-                : status.name !== "canceled"
+            .filter(
+              (status) =>
+                activeTab !== "canceledOrders" || status.name === "canceled"
             )
             .map((status) => (
               <Droppable droppableId={status.name} key={status.name}>
@@ -206,12 +250,15 @@ const OrderManagementPage = () => {
                     <h2 className="text-xl font-bold mb-4 capitalize text-blue-500">
                       {status.emoji} {status.name} Orders
                     </h2>
-                    {groupOrdersByStatus(status.name).length === 0 ? (
+                    {filteredOrders.filter(
+                      (order) => order.status === status.name
+                    ).length === 0 ? (
                       <p>No orders in this status.</p>
                     ) : (
                       <ul>
-                        {groupOrdersByStatus(status.name).map(
-                          (order, index) => (
+                        {filteredOrders
+                          .filter((order) => order.status === status.name)
+                          .map((order, index) => (
                             <Draggable
                               key={order.order_id}
                               draggableId={String(order.order_id)}
@@ -237,15 +284,10 @@ const OrderManagementPage = () => {
                                     <strong>Total Amount:</strong>{" "}
                                     {order.total_amount} KZT
                                   </p>
-                                  <p>
-                                    <strong>Payment System:</strong>{" "}
-                                    {order.payment_system}
-                                  </p>
                                 </li>
                               )}
                             </Draggable>
-                          )
-                        )}
+                          ))}
                       </ul>
                     )}
                     {provided.placeholder}
