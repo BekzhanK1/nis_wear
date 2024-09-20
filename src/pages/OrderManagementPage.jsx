@@ -227,7 +227,7 @@ const OrderManagementPage = () => {
       {/* Order Detail Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white p-10 rounded-lg shadow-lg max-w-2xl w-full">
+          <div className="bg-white p-10 rounded-lg shadow-lg max-w-3xl w-full">
             <h2 className="text-2xl font-bold mb-4">
               Order Details: {selectedOrder.order_id}
             </h2>
@@ -433,16 +433,30 @@ const OrderManagementPage = () => {
               </button>
 
               <button
+                try
                 onClick={() => {
-                  // You can integrate the email sending function here
-                  console.log(
-                    `Sending email to: ${selectedOrder.customer.email}`
-                  );
-                  console.log(
-                    `Email subject: nis-wear.kz(Order id: ${selectedOrder.order_id})`
-                  );
+                  try {
+                    const response = axios.post(
+                      `http://localhost:8000/send-email`,
+                      {
+                        email: selectedOrder.customer.email,
+                        subject: `nis-wear.kz(Order id: ${selectedOrder.order_id})`,
+                        body: emailBody,
+                      },
+                      {
+                        headers: {
+                          Authorization: `Bearer ${localStorage.getItem(
+                            "access_token"
+                          )}`,
+                        },
+                      }
+                    );
+                    console.log("Email sent:", response.data);
+                  } catch (error) {
+                    console.error("Error sending email:", error);
+                  }
+
                   setAlert(true);
-                  console.log(`Email body: ${emailBody}`);
                   setIsEmailModalOpen(false);
                   setTimeout(() => {
                     setAlert(false);
