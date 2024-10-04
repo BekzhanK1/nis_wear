@@ -26,6 +26,38 @@ const OrderManagementPage = () => {
     { name: "delivered", emoji: "✅" },
   ];
 
+  const schools = {
+    1: "НИШ ФМН города Астана",
+    2: "НИШ IB города Астана",
+    3: "НИШ ФМН города Алматы",
+    4: "НИШ ХБН города Алматы",
+    5: "НИШ ХБН города Актау",
+    6: "НИШ ФМН города Актобе",
+    7: "НИШ ХБН города Атырау",
+    8: "НИШ ХБН города Караганда",
+    9: "НИШ ФМН города Кокшетау",
+    10: "НИШ ФМН города Костанай",
+    11: "НИШ ХБН города Кызылорда",
+    12: "НИШ ХБН города Павлодар",
+    13: "НИШ ХБН города Петропавловск",
+    14: "НИШ ФМН города Семей",
+    15: "НИШ ФМН города Талдыкорган",
+    16: "НИШ ФМН города Тараз",
+    17: "НИШ ХБН города Туркестан",
+    18: "НИШ ФМН города Уральск",
+    19: "НИШ ХБН города Усть-Каменогорск",
+    20: "НИШ ФМН города Шымкент",
+    21: "НИШ ХБН города Шымкент",
+  };
+
+  const grades = ["7", "8", "9", "10", "11", "12"];
+  const letters = ["A", "B", "C", "D", "E", "F", "G"];
+
+  const [selectedSchool, setSelectedSchool] = useState(null);
+  const [selectedGrade, setSelectedGrade] = useState("");
+  const [selectedLetter, setSelectedLetter] = useState("");
+  const [isPayed, setIsPayed] = useState(null);
+
   useEffect(() => {
     const token = localStorage.getItem("access_token");
 
@@ -35,7 +67,7 @@ const OrderManagementPage = () => {
       return;
     }
 
-    // Fetch orders based on the active tab
+    // Fetch orders based on the active tab and filters
     const shippingDateMap = {
       activeOrders: "closest",
       nextShippingOrders: "next",
@@ -43,7 +75,14 @@ const OrderManagementPage = () => {
     };
 
     setIsLoading(true);
-    fetchOrders(token, shippingDateMap[activeTab])
+    fetchOrders(
+      token,
+      shippingDateMap[activeTab],
+      selectedSchool,
+      selectedGrade,
+      selectedLetter,
+      isPayed
+    )
       .then((data) => {
         setOrders(data);
         setIsLoading(false);
@@ -52,7 +91,7 @@ const OrderManagementPage = () => {
         setError("Error fetching orders");
         setIsLoading(false);
       });
-  }, [activeTab]); // Refetch orders when activeTab changes
+  }, [activeTab, selectedSchool, selectedGrade, selectedLetter, isPayed]); // Refetch orders when activeTab changes
 
   const generateWhatsAppLink = (phone, orderId) => {
     const baseUrl = "https://wa.me/";
@@ -193,6 +232,75 @@ const OrderManagementPage = () => {
         >
           Previous Orders
         </button>
+      </div>
+
+      {/* Filters */}
+      <div className="mb-4">
+        {/* School Select */}
+        <select
+          className="border p-2 rounded-lg"
+          value={selectedSchool}
+          onChange={(e) => setSelectedSchool(e.target.value)}
+        >
+          <option value="">Select School</option>
+          {Object.keys(schools).map((id) => (
+            <option key={id} value={id}>
+              {schools[id]}
+            </option>
+          ))}
+        </select>
+
+        {/* Grade Select */}
+        <select
+          className="border p-2 rounded-lg ml-2"
+          value={selectedGrade}
+          onChange={(e) => {
+            setSelectedGrade(e.target.value);
+            setSelectedLetter(""); // Reset letter when grade changes
+          }}
+        >
+          <option value="">Select Grade</option>
+          {grades.map((grade) => (
+            <option key={grade} value={grade}>
+              {grade}
+            </option>
+          ))}
+        </select>
+
+        {/* Letter Select */}
+        <select
+          className="border p-2 rounded-lg ml-2"
+          value={selectedLetter}
+          onChange={(e) => setSelectedLetter(e.target.value)}
+          disabled={!selectedGrade}
+        >
+          <option value="">Select Letter</option>
+          {letters.map((letter) => (
+            <option key={letter} value={letter}>
+              {letter}
+            </option>
+          ))}
+        </select>
+
+        {/* Payed Checkbox */}
+        <label className="ml-4">
+          <input
+            type="checkbox"
+            checked={isPayed === true}
+            onChange={() => setIsPayed((prev) => (prev === true ? null : true))}
+          />
+          Payed
+        </label>
+        <label className="ml-4">
+          <input
+            type="checkbox"
+            checked={isPayed === false}
+            onChange={() =>
+              setIsPayed((prev) => (prev === false ? null : false))
+            }
+          />
+          Unpaid
+        </label>
       </div>
 
       {/* Drag and Drop Context */}
