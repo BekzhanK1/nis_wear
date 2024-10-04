@@ -80,6 +80,15 @@ const fetchOrders = async (
   }
 };
 
+const trackingOrder = async (orderId) => {
+  try {
+    const response = await api.get(`/order-tracking/${orderId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 const updateOrderStatus = async (orderId, newStatus, token) => {
   try {
     const response = await api.patch(
@@ -137,4 +146,5 @@ export {
   updateOrderStatus,
   updateProductAssembledStatus,
   sendEmail,
+  trackingOrder,
 };

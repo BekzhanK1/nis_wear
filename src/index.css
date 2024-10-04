@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 .loader {
-  border-top-color: #3498db;
-  animation: spinner 1.5s infinite linear;
+  border-top-color: #a82eff;
+  animation: spinner 0.3s linear infinite;
 }
 
 @keyframes spinner {

@@ -7,10 +7,9 @@ import {
 } from "../utils/apiService";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import dayjs from "dayjs";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
+import Loader from "./Loader";
 
 const OrderManagementPage = () => {
   const [orders, setOrders] = useState([]);
@@ -247,7 +246,7 @@ const OrderManagementPage = () => {
     setViewMode(viewMode === "kanban" ? "table" : "kanban");
   };
 
-  if (isLoading) return <p>Loading orders...</p>;
+  if (isLoading) return <Loader></Loader>;
   if (error) return <p>{error}</p>;
 
   return (

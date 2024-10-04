@@ -7,15 +7,18 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import OrderManagementPage from "./pages/OrderManagementPage";
 import OrderTrackingPage from "./pages/OrderTrackingPage";
+import Loader from "./pages/Loader";
+import MainPage from "./pages/MainPage";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <Router>
     <Routes>
-      <Route path="/" element={<App />} />
+      <Route path="/" element={<MainPage />} />
       <Route path="/login" element={<LoginPage />} />{" "}
       <Route path="/orders" element={<OrderManagementPage />} />{" "}
       <Route path="/tracking" element={<OrderTrackingPage />} />{" "}
+      <Route path="*" element={<Loader />} />
       {/* Example additional route */}
     </Routes>
   </Router>

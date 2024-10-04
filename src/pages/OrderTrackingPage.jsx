@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import axios from "axios";
 import dayjs from "dayjs";
+import { trackingOrder } from "../utils/apiService";
 
 const OrderTrackingPage = () => {
   const [orderId, setOrderId] = useState("");
@@ -23,11 +23,9 @@ const OrderTrackingPage = () => {
 
     try {
       // API call to get order details by order ID
-      const response = await axios.get(
-        `http://38.107.234.128:8000/order-tracking/${orderId}`
-      );
+      const response = await trackingOrder(orderId);
 
-      setOrderDetails(response.data); // Set order details from API response
+      setOrderDetails(response); // Set order details from API response
       setIsError(false);
     } catch (error) {
       console.error("Error fetching order details:", error);
@@ -96,12 +94,17 @@ const OrderTrackingPage = () => {
               </p>
             )}
           <p className="text-lg mb-4">
-            Total Amount:{" "}
+            School of delivery:{" "}
             <span className="font-semibold text-indigo-600">
-              ${orderDetails.total_amount}
+              {orderDetails.school}
             </span>
           </p>
-
+          <p className="text-lg mb-4">
+            Total Amount:{" "}
+            <span className="font-semibold text-indigo-600">
+              {orderDetails.total_amount} ₸
+            </span>
+          </p>
           {/* Display all status changes */}
           <h3 className="text-2xl font-bold mb-4">Status Changes</h3>
           <ul className="list-disc list-inside">
@@ -161,7 +164,6 @@ const OrderTrackingPage = () => {
               </li>
             ))}
           </ul>
-
           <p className="text-lg mt-4 text-gray-600">
             Do you have any questions? Contact us:{" "}
             <span className="text-indigo-500 font-bold">
