@@ -7,6 +7,9 @@ import {
 } from "../utils/apiService";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import dayjs from "dayjs";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 
 const OrderManagementPage = () => {
@@ -21,6 +24,7 @@ const OrderManagementPage = () => {
   const [viewMode, setViewMode] = useState("kanban"); // View modes: kanban, table
   const [sortColumn, setSortColumn] = useState(null); // For sorting
   const [sortDirection, setSortDirection] = useState("asc"); // For sorting direction
+  const [searchQuery, setSearchQuery] = useState(""); // New search state
   const statuses = [
     { name: "canceled", emoji: "❌" },
     { name: "new", emoji: "🆕" },
@@ -99,6 +103,12 @@ const OrderManagementPage = () => {
       });
   }, [activeTab, selectedSchool, selectedGrade, selectedLetter, isPayed]); // Refetch orders when activeTab changes
 
+  const filteredOrders = orders.filter(
+    (order) =>
+      order.order_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.customer.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const generateWhatsAppLink = (phone, orderId) => {
     const baseUrl = "https://wa.me/";
     const message = `Hi, your order id is ${orderId}, you can check it at http://38.107.234.128:3000/tracking`;
@@ -159,10 +169,28 @@ const OrderManagementPage = () => {
       const updatedOrders = orders.map((order) =>
         order.order_id === draggableId ? { ...order, status: newStatus } : order
       );
-      setOrders(updatedOrders);
+      setOrders(updatedOrders); // Update the original `orders` array
     } catch (error) {
       console.error("Error updating order status:", error);
     }
+  };
+
+  // Function to download table as Excel file
+  const downloadExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(
+      orders.map((order) => ({
+        "Order ID": order.order_id,
+        "Customer Name": order.customer.name,
+        School: order.school,
+        Grade: order.grade,
+        Letter: order.letter,
+        Status: order.status,
+        "Total Amount": `${order.total_amount} KZT`,
+      }))
+    );
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
+    XLSX.writeFile(workbook, `${new Date()}-orders.xlsx`);
   };
 
   const handleStatusChange = async (orderId, newStatus) => {
@@ -174,7 +202,7 @@ const OrderManagementPage = () => {
       const updatedOrders = orders.map((order) =>
         order.order_id === orderId ? { ...order, status: newStatus } : order
       );
-      setOrders(updatedOrders);
+      setOrders(updatedOrders); // Update the original `orders` array
       setSelectedOrder(null); // Close modal
     } catch (error) {
       console.error("Error updating order status:", error);
@@ -261,6 +289,15 @@ const OrderManagementPage = () => {
           Previous Orders
         </button>
       </div>
+      <div className="mb-4">
+        <input
+          type="text"
+          className="border p-2 rounded-lg w-full"
+          placeholder="Search by Order ID or Customer Name"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
 
       {/* Filters */}
       <div className="mb-4">
@@ -338,6 +375,12 @@ const OrderManagementPage = () => {
         >
           Switch to {viewMode === "kanban" ? "Table View" : "Kanban View"}
         </button>
+        <button
+          className="px-4 py-2 bg-green-500 text-white rounded-lg ml-2"
+          onClick={downloadExcel}
+        >
+          Download Excel
+        </button>
       </div>
 
       {viewMode === "kanban" ? (
@@ -354,12 +397,13 @@ const OrderManagementPage = () => {
                     <h2 className="text-xl font-bold mb-4 capitalize text-blue-500">
                       {status.emoji} {status.name} Orders
                     </h2>
-                    {orders.filter((order) => order.status === status.name)
-                      .length === 0 ? (
+                    {filteredOrders.filter(
+                      (order) => order.status === status.name
+                    ).length === 0 ? (
                       <p>No orders in this status.</p>
                     ) : (
                       <ul>
-                        {orders
+                        {filteredOrders
                           .filter((order) => order.status === status.name)
                           .map((order, index) => (
                             <Draggable
@@ -382,6 +426,13 @@ const OrderManagementPage = () => {
                                     <strong>Customer:</strong>{" "}
                                     {order.customer.name} (
                                     {order.customer.phone})
+                                  </p>
+                                  <p>
+                                    <strong>School:</strong> {order.school}
+                                  </p>
+                                  <p>
+                                    <strong>Class:</strong> {order.grade}
+                                    {order.letter}
                                   </p>
                                   <p>
                                     <strong>Total Amount:</strong>{" "}
@@ -486,14 +537,14 @@ const OrderManagementPage = () => {
               </tr>
             </thead>
             <tbody>
-              {orders.length === 0 ? (
+              {filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="text-center py-4">
                     No orders available.
                   </td>
                 </tr>
               ) : (
-                orders.map((order) => (
+                filteredOrders.map((order) => (
                   <tr key={order.order_id} className="text-center">
                     <td className="border px-4 py-2">{order.order_id}</td>
                     <td className="border px-4 py-2">{order.customer.name}</td>
