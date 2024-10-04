@@ -22,6 +22,13 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    if (error.response && error.response.status === 401) {
+      // Clear token from localStorage
+      localStorage.removeItem("access_token");
+
+      // Redirect to the login page
+      window.location.href = "/login";
+    }
     return Promise.reject(error);
   }
 );

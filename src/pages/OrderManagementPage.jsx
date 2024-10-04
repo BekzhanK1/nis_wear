@@ -7,6 +7,7 @@ import {
 } from "../utils/apiService";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
 
 const OrderManagementPage = () => {
   const [orders, setOrders] = useState([]);
@@ -17,6 +18,9 @@ const OrderManagementPage = () => {
   const [emailBody, setEmailBody] = useState("");
   const [alert, setAlert] = useState(false);
   const [activeTab, setActiveTab] = useState("activeOrders"); // Tabs: closestOrders, nextOrders, previousOrders
+  const [viewMode, setViewMode] = useState("kanban"); // View modes: kanban, table
+  const [sortColumn, setSortColumn] = useState(null); // For sorting
+  const [sortDirection, setSortDirection] = useState("asc"); // For sorting direction
   const statuses = [
     { name: "canceled", emoji: "❌" },
     { name: "new", emoji: "🆕" },
@@ -58,12 +62,14 @@ const OrderManagementPage = () => {
   const [selectedLetter, setSelectedLetter] = useState("");
   const [isPayed, setIsPayed] = useState(null);
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     const token = localStorage.getItem("access_token");
 
     if (!token) {
       setError("You must be logged in to view orders.");
-      setIsLoading(false);
+      navigate("/login");
       return;
     }
 
@@ -103,6 +109,24 @@ const OrderManagementPage = () => {
 
   const closeOrderModal = () => {
     setSelectedOrder(null);
+  };
+  const handleSort = (column) => {
+    const newDirection =
+      sortColumn === column && sortDirection === "asc" ? "desc" : "asc";
+    setSortColumn(column);
+    setSortDirection(newDirection);
+
+    const sortedOrders = [...orders].sort((a, b) => {
+      if (a[column] < b[column]) {
+        return newDirection === "asc" ? -1 : 1;
+      }
+      if (a[column] > b[column]) {
+        return newDirection === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+
+    setOrders(sortedOrders);
   };
 
   const getNextShippingSunday = (currentDate) => {
@@ -189,6 +213,10 @@ const OrderManagementPage = () => {
     } catch (error) {
       console.error("Error updating product assembly status:", error);
     }
+  };
+
+  const handleViewToggle = () => {
+    setViewMode(viewMode === "kanban" ? "table" : "kanban");
   };
 
   if (isLoading) return <p>Loading orders...</p>;
@@ -303,65 +331,194 @@ const OrderManagementPage = () => {
         </label>
       </div>
 
-      {/* Drag and Drop Context */}
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {statuses.map((status) => (
-            <Droppable droppableId={status.name} key={status.name}>
-              {(provided) => (
-                <div
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  className="bg-white p-4 rounded-lg shadow-md"
+      <div className="mb-4 text-center">
+        <button
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+          onClick={handleViewToggle}
+        >
+          Switch to {viewMode === "kanban" ? "Table View" : "Kanban View"}
+        </button>
+      </div>
+
+      {viewMode === "kanban" ? (
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {statuses.map((status) => (
+              <Droppable droppableId={status.name} key={status.name}>
+                {(provided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="bg-white p-4 rounded-lg shadow-md"
+                  >
+                    <h2 className="text-xl font-bold mb-4 capitalize text-blue-500">
+                      {status.emoji} {status.name} Orders
+                    </h2>
+                    {orders.filter((order) => order.status === status.name)
+                      .length === 0 ? (
+                      <p>No orders in this status.</p>
+                    ) : (
+                      <ul>
+                        {orders
+                          .filter((order) => order.status === status.name)
+                          .map((order, index) => (
+                            <Draggable
+                              key={order.order_id}
+                              draggableId={String(order.order_id)}
+                              index={index}
+                            >
+                              {(provided) => (
+                                <li
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  ref={provided.innerRef}
+                                  className="bg-gray-200 p-4 mb-2 rounded-lg shadow-sm cursor-pointer hover:bg-gray-300"
+                                  onClick={() => setSelectedOrder(order)}
+                                >
+                                  <p>
+                                    <strong>Order ID:</strong> {order.order_id}
+                                  </p>
+                                  <p>
+                                    <strong>Customer:</strong>{" "}
+                                    {order.customer.name} (
+                                    {order.customer.phone})
+                                  </p>
+                                  <p>
+                                    <strong>Total Amount:</strong>{" "}
+                                    {order.total_amount} KZT
+                                  </p>
+                                </li>
+                              )}
+                            </Draggable>
+                          ))}
+                      </ul>
+                    )}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            ))}
+          </div>
+        </DragDropContext>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="table-auto w-full bg-white rounded-lg shadow-md">
+            <thead>
+              <tr>
+                <th
+                  className="px-4 py-2 cursor-pointer"
+                  onClick={() => handleSort("order_id")}
                 >
-                  <h2 className="text-xl font-bold mb-4 capitalize text-blue-500">
-                    {status.emoji} {status.name} Orders
-                  </h2>
-                  {orders.filter((order) => order.status === status.name)
-                    .length === 0 ? (
-                    <p>No orders in this status.</p>
-                  ) : (
-                    <ul>
-                      {orders
-                        .filter((order) => order.status === status.name)
-                        .map((order, index) => (
-                          <Draggable
-                            key={order.order_id}
-                            draggableId={String(order.order_id)}
-                            index={index}
-                          >
-                            {(provided) => (
-                              <li
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                ref={provided.innerRef}
-                                className="bg-gray-200 p-4 mb-2 rounded-lg shadow-sm cursor-pointer hover:bg-gray-300"
-                                onClick={() => setSelectedOrder(order)}
-                              >
-                                <p>
-                                  <strong>Order ID:</strong> {order.order_id}
-                                </p>
-                                <p>
-                                  <strong>Customer:</strong>{" "}
-                                  {order.customer.name} ({order.customer.phone})
-                                </p>
-                                <p>
-                                  <strong>Total Amount:</strong>{" "}
-                                  {order.total_amount} KZT
-                                </p>
-                              </li>
-                            )}
-                          </Draggable>
-                        ))}
-                    </ul>
-                  )}
-                  {provided.placeholder}
-                </div>
+                  Order ID{" "}
+                  {sortColumn === "order_id"
+                    ? sortDirection === "asc"
+                      ? "▲"
+                      : "▼"
+                    : ""}
+                </th>
+                <th
+                  className="px-4 py-2 cursor-pointer"
+                  onClick={() => handleSort("customer.name")}
+                >
+                  Customer Name{" "}
+                  {sortColumn === "customer.name"
+                    ? sortDirection === "asc"
+                      ? "▲"
+                      : "▼"
+                    : ""}
+                </th>
+                <th
+                  className="px-4 py-2 cursor-pointer"
+                  onClick={() => handleSort("school")}
+                >
+                  School{" "}
+                  {sortColumn === "school"
+                    ? sortDirection === "asc"
+                      ? "▲"
+                      : "▼"
+                    : ""}
+                </th>
+                <th
+                  className="px-4 py-2 cursor-pointer"
+                  onClick={() => handleSort("grade")}
+                >
+                  Grade{" "}
+                  {sortColumn === "grade"
+                    ? sortDirection === "asc"
+                      ? "▲"
+                      : "▼"
+                    : ""}
+                </th>
+                <th
+                  className="px-4 py-2 cursor-pointer"
+                  onClick={() => handleSort("letter")}
+                >
+                  Letter{" "}
+                  {sortColumn === "letter"
+                    ? sortDirection === "asc"
+                      ? "▲"
+                      : "▼"
+                    : ""}
+                </th>
+                <th
+                  className="px-4 py-2 cursor-pointer"
+                  onClick={() => handleSort("status")}
+                >
+                  Status{" "}
+                  {sortColumn === "status"
+                    ? sortDirection === "asc"
+                      ? "▲"
+                      : "▼"
+                    : ""}
+                </th>
+                <th
+                  className="px-4 py-2 cursor-pointer"
+                  onClick={() => handleSort("total_amount")}
+                >
+                  Total Amount{" "}
+                  {sortColumn === "total_amount"
+                    ? sortDirection === "asc"
+                      ? "▲"
+                      : "▼"
+                    : ""}
+                </th>
+                <th className="px-4 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="text-center py-4">
+                    No orders available.
+                  </td>
+                </tr>
+              ) : (
+                orders.map((order) => (
+                  <tr key={order.order_id} className="text-center">
+                    <td className="border px-4 py-2">{order.order_id}</td>
+                    <td className="border px-4 py-2">{order.customer.name}</td>
+                    <td className="border px-4 py-2">{order.school}</td>
+                    <td className="border px-4 py-2">{order.grade}</td>
+                    <td className="border px-4 py-2">{order.letter}</td>
+                    <td className="border px-4 py-2">{order.status}</td>
+                    <td className="border px-4 py-2">
+                      {order.total_amount} KZT
+                    </td>
+                    <td className="border px-4 py-2">
+                      <button
+                        onClick={() => setSelectedOrder(order)}
+                        className="px-2 py-1 bg-blue-500 text-white rounded"
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))
               )}
-            </Droppable>
-          ))}
+            </tbody>
+          </table>
         </div>
-      </DragDropContext>
+      )}
 
       {selectedOrder && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
