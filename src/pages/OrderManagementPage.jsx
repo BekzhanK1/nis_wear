@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { fetchOrders } from "../utils/apiService";
+import {
+  fetchOrders,
+  sendEmail,
+  updateOrderStatus,
+  updateProductAssembledStatus,
+} from "../utils/apiService";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-import axios from "axios";
 import dayjs from "dayjs";
 
 const OrderManagementPage = () => {
@@ -12,7 +16,7 @@ const OrderManagementPage = () => {
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [emailBody, setEmailBody] = useState("");
   const [alert, setAlert] = useState(false);
-  const [activeTab, setActiveTab] = useState("activeOrders"); // Added for tab management
+  const [activeTab, setActiveTab] = useState("activeOrders"); // Tabs: closestOrders, nextOrders, previousOrders
   const statuses = [
     { name: "canceled", emoji: "❌" },
     { name: "new", emoji: "🆕" },
@@ -31,7 +35,15 @@ const OrderManagementPage = () => {
       return;
     }
 
-    fetchOrders(token)
+    // Fetch orders based on the active tab
+    const shippingDateMap = {
+      activeOrders: "closest",
+      nextShippingOrders: "next",
+      previousOrders: "previous",
+    };
+
+    setIsLoading(true);
+    fetchOrders(token, shippingDateMap[activeTab])
       .then((data) => {
         setOrders(data);
         setIsLoading(false);
@@ -40,7 +52,7 @@ const OrderManagementPage = () => {
         setError("Error fetching orders");
         setIsLoading(false);
       });
-  }, []);
+  }, [activeTab]); // Refetch orders when activeTab changes
 
   const generateWhatsAppLink = (phone, orderId) => {
     const baseUrl = "https://wa.me/";
@@ -50,31 +62,8 @@ const OrderManagementPage = () => {
     return `${baseUrl}${phone.replace(/\D/g, "")}?text=${encodedMessage}`;
   };
 
-  const handleDragEnd = async (result) => {
-    const { destination, source, draggableId } = result;
-    if (!destination || destination.droppableId === source.droppableId) return;
-
-    const newStatus = destination.droppableId;
-    const token = localStorage.getItem("access_token");
-
-    try {
-      await axios.patch(
-        `http://38.107.234.128:8000/orders/${draggableId}?status=${newStatus}`,
-        null,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const updatedOrders = orders.map((order) =>
-        order.order_id === draggableId ? { ...order, status: newStatus } : order
-      );
-      setOrders(updatedOrders);
-    } catch (error) {
-      console.error("Error updating order status:", error);
-    }
+  const closeOrderModal = () => {
+    setSelectedOrder(null);
   };
 
   const getNextShippingSunday = (currentDate) => {
@@ -90,22 +79,34 @@ const OrderManagementPage = () => {
 
     return nextShippingSunday;
   };
+
   const closestShippingDate = getNextShippingSunday(new Date());
-  const nextShippingDate = closestShippingDate.add(2, "week"); // Add 2 weeks to get the next shipping date
+  const nextShippingDate = closestShippingDate.add(2, "week");
+
+  const handleDragEnd = async (result) => {
+    const { destination, source, draggableId } = result;
+    if (!destination || destination.droppableId === source.droppableId) return;
+
+    const newStatus = destination.droppableId;
+    const token = localStorage.getItem("access_token");
+
+    try {
+      await updateOrderStatus(draggableId, newStatus, token);
+
+      const updatedOrders = orders.map((order) =>
+        order.order_id === draggableId ? { ...order, status: newStatus } : order
+      );
+      setOrders(updatedOrders);
+    } catch (error) {
+      console.error("Error updating order status:", error);
+    }
+  };
 
   const handleStatusChange = async (orderId, newStatus) => {
     const token = localStorage.getItem("access_token");
 
     try {
-      await axios.patch(
-        `http://38.107.234.128:8000/orders/${orderId}?status=${newStatus}`,
-        null,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await updateOrderStatus(orderId, newStatus, token);
 
       const updatedOrders = orders.map((order) =>
         order.order_id === orderId ? { ...order, status: newStatus } : order
@@ -121,15 +122,7 @@ const OrderManagementPage = () => {
     const token = localStorage.getItem("access_token");
 
     try {
-      await axios.patch(
-        `http://38.107.234.128:8000/products/${productId}?assemble=${isAssembled}`,
-        null,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      updateProductAssembledStatus(productId, isAssembled, token);
 
       const updatedOrders = orders.map((order) => {
         if (order.order_id === selectedOrder.order_id) {
@@ -159,36 +152,6 @@ const OrderManagementPage = () => {
     }
   };
 
-  const groupOrdersByStatus = (status) => {
-    return orders.filter((order) => order.status === status);
-  };
-
-  const openOrderModal = (order) => {
-    setSelectedOrder(order);
-  };
-
-  const closeOrderModal = () => {
-    setSelectedOrder(null);
-  };
-
-  const filteredOrders = orders.filter((order) => {
-    const orderShippingDate = dayjs(order.shipping_date);
-
-    if (activeTab === "nextShippingOrders") {
-      return orderShippingDate.isSame(nextShippingDate, "day");
-    }
-
-    if (activeTab === "activeOrders") {
-      return orderShippingDate.isSame(closestShippingDate, "day");
-    }
-
-    if (activeTab === "canceledOrders") {
-      return order.status === "canceled";
-    }
-
-    return false;
-  });
-
   if (isLoading) return <p>Loading orders...</p>;
   if (error) return <p>{error}</p>;
 
@@ -208,7 +171,7 @@ const OrderManagementPage = () => {
           }`}
           onClick={() => setActiveTab("activeOrders")}
         >
-          Active Orders {closestShippingDate.format("MMM DD")}
+          Active Orders {closestShippingDate.format("DD/MM/YYYY")}
         </button>
         <button
           className={`px-4 py-2 font-bold ${
@@ -218,87 +181,80 @@ const OrderManagementPage = () => {
           }`}
           onClick={() => setActiveTab("nextShippingOrders")}
         >
-          Next shipping orders {nextShippingDate.format("MMM DD")}
+          Next shipping orders {nextShippingDate.format("DD/MM/YYYY")}
         </button>
         <button
           className={`px-4 py-2 font-bold rounded-r-lg ${
-            activeTab === "canceledOrders"
+            activeTab === "previousOrders"
               ? "bg-blue-500 text-white"
               : "bg-gray-300 text-gray-700"
           }`}
-          onClick={() => setActiveTab("canceledOrders")}
+          onClick={() => setActiveTab("previousOrders")}
         >
-          Canceled Orders
+          Previous Orders
         </button>
       </div>
 
+      {/* Drag and Drop Context */}
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {statuses
-            .filter(
-              (status) =>
-                activeTab !== "canceledOrders" || status.name === "canceled"
-            )
-            .map((status) => (
-              <Droppable droppableId={status.name} key={status.name}>
-                {(provided) => (
-                  <div
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                    className="bg-white p-4 rounded-lg shadow-md"
-                  >
-                    <h2 className="text-xl font-bold mb-4 capitalize text-blue-500">
-                      {status.emoji} {status.name} Orders
-                    </h2>
-                    {filteredOrders.filter(
-                      (order) => order.status === status.name
-                    ).length === 0 ? (
-                      <p>No orders in this status.</p>
-                    ) : (
-                      <ul>
-                        {filteredOrders
-                          .filter((order) => order.status === status.name)
-                          .map((order, index) => (
-                            <Draggable
-                              key={order.order_id}
-                              draggableId={String(order.order_id)}
-                              index={index}
-                            >
-                              {(provided) => (
-                                <li
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  ref={provided.innerRef}
-                                  className="bg-gray-200 p-4 mb-2 rounded-lg shadow-sm cursor-pointer hover:bg-gray-300"
-                                  onClick={() => openOrderModal(order)}
-                                >
-                                  <p>
-                                    <strong>Order ID:</strong> {order.order_id}
-                                  </p>
-                                  <p>
-                                    <strong>Customer:</strong>{" "}
-                                    {order.customer.name} (
-                                    {order.customer.phone})
-                                  </p>
-                                  <p>
-                                    <strong>Total Amount:</strong>{" "}
-                                    {order.total_amount} KZT
-                                  </p>
-                                </li>
-                              )}
-                            </Draggable>
-                          ))}
-                      </ul>
-                    )}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            ))}
+          {statuses.map((status) => (
+            <Droppable droppableId={status.name} key={status.name}>
+              {(provided) => (
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="bg-white p-4 rounded-lg shadow-md"
+                >
+                  <h2 className="text-xl font-bold mb-4 capitalize text-blue-500">
+                    {status.emoji} {status.name} Orders
+                  </h2>
+                  {orders.filter((order) => order.status === status.name)
+                    .length === 0 ? (
+                    <p>No orders in this status.</p>
+                  ) : (
+                    <ul>
+                      {orders
+                        .filter((order) => order.status === status.name)
+                        .map((order, index) => (
+                          <Draggable
+                            key={order.order_id}
+                            draggableId={String(order.order_id)}
+                            index={index}
+                          >
+                            {(provided) => (
+                              <li
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                ref={provided.innerRef}
+                                className="bg-gray-200 p-4 mb-2 rounded-lg shadow-sm cursor-pointer hover:bg-gray-300"
+                                onClick={() => setSelectedOrder(order)}
+                              >
+                                <p>
+                                  <strong>Order ID:</strong> {order.order_id}
+                                </p>
+                                <p>
+                                  <strong>Customer:</strong>{" "}
+                                  {order.customer.name} ({order.customer.phone})
+                                </p>
+                                <p>
+                                  <strong>Total Amount:</strong>{" "}
+                                  {order.total_amount} KZT
+                                </p>
+                              </li>
+                            )}
+                          </Draggable>
+                        ))}
+                    </ul>
+                  )}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          ))}
         </div>
       </DragDropContext>
 
-      {/* Order Detail Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
           <div className="bg-white p-10 rounded-lg shadow-lg max-w-3xl w-full">
@@ -508,22 +464,13 @@ const OrderManagementPage = () => {
               </button>
 
               <button
-                onClick={() => {
+                onClick={async () => {
                   try {
-                    const response = axios.post(
-                      `http://38.107.234.128:8000/send-email`,
-                      {
-                        email: selectedOrder.customer.email,
-                        subject: `nis-wear.kz(Order id: ${selectedOrder.order_id})`,
-                        body: emailBody,
-                      },
-                      {
-                        headers: {
-                          Authorization: `Bearer ${localStorage.getItem(
-                            "access_token"
-                          )}`,
-                        },
-                      }
+                    const response = sendEmail(
+                      selectedOrder.customer.email,
+                      `nis-wear.kz(Order id: ${selectedOrder.order_id})`,
+                      emailBody,
+                      localStorage.getItem("access_token")
                     );
                     console.log("Email sent:", response.data);
                   } catch (error) {

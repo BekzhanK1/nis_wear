@@ -33,44 +33,101 @@ const getToken = async (username, password) => {
 
   try {
     const response = await api.post("/token", params);
-    console.log("Response:", response.data);
-    console.log("Status:", response.status);
-    if (response.status !== 200) {
-      if (response.status === 401) {
-        throw new Error("Invalid credentials");
-      } else if (response.status === 500) {
-        throw new Error("Server error");
-      } else {
-        throw new Error("Error fetching token");
-      }
-    }
     localStorage.setItem("access_token", response.data.access_token);
-
     return response.data;
   } catch (error) {
-    console.error("Error fetching token:", error);
     throw error;
   }
 };
 
-const fetchOrders = async (token) => {
+const fetchOrders = async (
+  token,
+  shippingDate,
+  school,
+  grade,
+  letter,
+  payed
+) => {
   try {
-    const response = await api.get("/orders", {
+    // Build query string dynamically based on the parameters provided
+    let queryParams = [];
+
+    if (shippingDate) queryParams.push(`shipping_date=${shippingDate}`);
+    if (school) queryParams.push(`school=${school}`);
+    if (grade) queryParams.push(`grade=${grade}`);
+    if (letter) queryParams.push(`letter=${letter}`);
+    if (payed !== null && payed !== undefined)
+      queryParams.push(`payed=${payed}`);
+
+    const queryString = queryParams.length ? `?${queryParams.join("&")}` : "";
+
+    const response = await api.get(`/orders${queryString}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
-    console.log("Response:", response.data);
-    console.log("Status:", response.status);
-    if (response.status !== 200) {
-      throw new Error("Error fetching orders");
-    }
 
     return response.data;
   } catch (error) {
-    console.error("Error fetching orders:", error);
     throw error;
   }
 };
 
-export { getToken, fetchOrders };
+const updateOrderStatus = async (orderId, newStatus, token) => {
+  try {
+    const response = await api.patch(
+      `/orders/${orderId}?status=${newStatus}`,
+      null,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const updateProductAssembledStatus = async (productId, isAssembled, token) => {
+  try {
+    const response = await api.patch(
+      `/products/${productId}?assemble=${isAssembled}`,
+      null,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const sendEmail = async (email, subject, body, token) => {
+  try {
+    const response = await api.post(
+      "/send-email",
+      { email, subject, body },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export {
+  getToken,
+  fetchOrders,
+  updateOrderStatus,
+  updateProductAssembledStatus,
+  sendEmail,
+};
