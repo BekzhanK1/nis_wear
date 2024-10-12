@@ -32,12 +32,12 @@ const OrderManagementPage = () => {
   const [showCalendar, setShowCalendar] = useState(false); // Control calendar visibility
   const [selectedDate, setSelectedDate] = useState(new Date());
   const statuses = [
-    { name: "canceled", emoji: "❌" },
-    { name: "new", emoji: "🆕" },
-    { name: "paid", emoji: "💵" },
-    { name: "processing", emoji: "🔄" },
-    { name: "shipped", emoji: "📦" },
-    { name: "delivered", emoji: "✅" },
+    { name: "canceled", emoji: "❌", russian: "Отмененные заказы" },
+    { name: "new", emoji: "🆕", russian: "Новые заказы" },
+    { name: "paid", emoji: "💵", russian: "Оплаченные заказы" },
+    { name: "processing", emoji: "🔄", russian: "Заказы в процессе сборки" },
+    { name: "shipped", emoji: "📦", russian: "Отправленые заказы" },
+    { name: "delivered", emoji: "✅", russian: "Доставленные заказы" },
   ];
 
   const schools = {
@@ -152,7 +152,7 @@ const OrderManagementPage = () => {
 
   const generateWhatsAppLink = (phone, orderId) => {
     const baseUrl = "https://wa.me/";
-    const message = `Hi, your order id is ${orderId}, you can check it at http://38.107.234.128:3000/tracking`;
+    const message = `Здравствуйте, ваш номер заказа: ${orderId}, вы можете отследить его по ссылке http://38.107.234.128:3000/tracking/${orderId}`;
     const encodedMessage = encodeURIComponent(message);
 
     return `${baseUrl}${phone.replace(/\D/g, "")}?text=${encodedMessage}`;
@@ -317,7 +317,7 @@ const OrderManagementPage = () => {
           className="px-4 py-2 bg-blue-500 text-white rounded-lg"
           onClick={goToMainPage}
         >
-          Back ⬅️
+          Назад ⬅️
         </button>
 
         <div className="ml-auto">
@@ -325,7 +325,7 @@ const OrderManagementPage = () => {
             className="px-4 py-2 bg-green-600 text-white rounded-lg mr-2"
             onClick={goToWhatsApp}
           >
-            Open Web WhatsApp
+            Открыть Web WhatsApp
           </button>
           <span
             onClick={() => setShowCalendar(!showCalendar)} // Toggle calendar visibility
@@ -354,7 +354,7 @@ const OrderManagementPage = () => {
       <ToastContainer />
 
       <h1 className="text-3xl font-bold mb-4 text-blue-700 text-center">
-        Order Management
+        Заказы
       </h1>
 
       {/* Tabs */}
@@ -367,7 +367,7 @@ const OrderManagementPage = () => {
           }`}
           onClick={() => setActiveTab("activeOrders")}
         >
-          Active Orders {closestShippingDate.format("DD/MM/YYYY")}
+          Активные заказы {closestShippingDate.format("DD/MM/YYYY")}
         </button>
         <button
           className={`px-4 py-2 font-bold ${
@@ -377,7 +377,7 @@ const OrderManagementPage = () => {
           }`}
           onClick={() => setActiveTab("nextShippingOrders")}
         >
-          Next shipping orders {nextShippingDate.format("DD/MM/YYYY")}
+          Следующие заказы {nextShippingDate.format("DD/MM/YYYY")}
         </button>
         <button
           className={`px-4 py-2 font-bold rounded-r-lg ${
@@ -387,7 +387,7 @@ const OrderManagementPage = () => {
           }`}
           onClick={() => setActiveTab("previousOrders")}
         >
-          Previous Orders
+          Прошлые заказы
         </button>
       </div>
       <div className="mb-4 flex justify-center">
@@ -404,13 +404,13 @@ const OrderManagementPage = () => {
       <div className="mb-4 md:flex md:items-center md:space-x-4">
         {/* School Select */}
         <div className="flex flex-col md:flex-row md:items-center">
-          <label className="text-gray-700 font-medium mr-2">School</label>
+          <label className="text-gray-700 font-medium mr-2">Школа</label>
           <select
             className="border p-2 rounded-lg w-full md:w-auto bg-white focus:ring-2 focus:ring-blue-500"
             value={selectedSchool}
             onChange={(e) => setSelectedSchool(e.target.value)}
           >
-            <option value="">Select School</option>
+            <option value="">Выбрать школу</option>
             {Object.keys(schools).map((id) => (
               <option key={id} value={id}>
                 {schools[id]}
@@ -421,7 +421,7 @@ const OrderManagementPage = () => {
 
         {/* Grade Select */}
         <div className="flex flex-col md:flex-row md:items-center">
-          <label className="text-gray-700 font-medium mr-2">Grade</label>
+          <label className="text-gray-700 font-medium mr-2">Класс</label>
           <select
             className="border p-2 rounded-lg w-full md:w-auto bg-white focus:ring-2 focus:ring-blue-500"
             value={selectedGrade}
@@ -430,7 +430,7 @@ const OrderManagementPage = () => {
               setSelectedLetter(""); // Reset letter when grade changes
             }}
           >
-            <option value="">Select Grade</option>
+            <option value="">Выбрать класс</option>
             {grades.map((grade) => (
               <option key={grade} value={grade}>
                 {grade}
@@ -441,14 +441,14 @@ const OrderManagementPage = () => {
 
         {/* Letter Select */}
         <div className="flex flex-col md:flex-row md:items-center">
-          <label className="text-gray-700 font-medium mr-2">Letter</label>
+          <label className="text-gray-700 font-medium mr-2">Литер</label>
           <select
             className="border p-2 rounded-lg w-full md:w-auto bg-white focus:ring-2 focus:ring-blue-500"
             value={selectedLetter}
             onChange={(e) => setSelectedLetter(e.target.value)}
             disabled={!selectedGrade}
           >
-            <option value="">Select Letter</option>
+            <option value="">Выбрать литер</option>
             {letters.map((letter) => (
               <option key={letter} value={letter}>
                 {letter}
@@ -468,7 +468,7 @@ const OrderManagementPage = () => {
                 setIsPayed((prev) => (prev === true ? null : true))
               }
             />
-            Payed
+            Оплачен
           </label>
           <label className="flex items-center">
             <input
@@ -479,7 +479,7 @@ const OrderManagementPage = () => {
                 setIsPayed((prev) => (prev === false ? null : false))
               }
             />
-            Unpaid
+            Не оплачен
           </label>
           <div className="flex items-center space-x-2">
             <button
@@ -491,7 +491,7 @@ const OrderManagementPage = () => {
                 setIsPayed(null);
               }}
             >
-              Reset Filters
+              Сбросить фильтры
             </button>
           </div>
         </div>
@@ -524,23 +524,23 @@ const OrderManagementPage = () => {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                 ></path>
               </svg>
-              Proccessing
+              В процессе...
             </>
           ) : (
-            "Refresh Orders"
+            "Обновить заказы"
           )}
         </button>
         <button
           className="px-4 py-2 bg-blue-500 text-white rounded-lg ml-2"
           onClick={handleViewToggle}
         >
-          Switch to {viewMode === "kanban" ? "Table View" : "Kanban View"}
+          Сменить вид на {viewMode === "kanban" ? "таблицу" : "доску"}
         </button>
         <button
           className="px-4 py-2 bg-green-500 text-white rounded-lg ml-2"
           onClick={downloadExcel}
         >
-          Download Excel
+          Скачать в Excel
         </button>
       </div>
 
@@ -555,13 +555,13 @@ const OrderManagementPage = () => {
                     ref={provided.innerRef}
                     className="bg-white p-4 rounded-lg shadow-md"
                   >
-                    <h2 className="text-xl font-bold mb-4 capitalize text-blue-500">
-                      {status.emoji} {status.name} Orders
+                    <h2 className="text-xl font-bold mb-4 text-blue-500">
+                      {status.emoji} {status.russian}
                     </h2>
                     {filteredOrders.filter(
                       (order) => order.status === status.name
                     ).length === 0 ? (
-                      <p>No orders in this status.</p>
+                      <p>Нет заказов в этом статусе.</p>
                     ) : (
                       <ul>
                         {filteredOrders
@@ -581,22 +581,23 @@ const OrderManagementPage = () => {
                                   onClick={() => setSelectedOrder(order)}
                                 >
                                   <p>
-                                    <strong>Order ID:</strong> {order.order_id}
+                                    <strong>Номер заказа:</strong>{" "}
+                                    {order.order_id}
                                   </p>
                                   <p>
-                                    <strong>Customer:</strong>{" "}
+                                    <strong>Клиент:</strong>{" "}
                                     {order.customer.name} (
                                     {order.customer.phone})
                                   </p>
                                   <p>
-                                    <strong>School:</strong> {order.school}
+                                    <strong>Школа:</strong> {order.school}
                                   </p>
                                   <p>
-                                    <strong>Class:</strong> {order.grade}
+                                    <strong>Класс:</strong> {order.grade}
                                     {order.letter}
                                   </p>
                                   <p>
-                                    <strong>Total Amount:</strong>{" "}
+                                    <strong>Общая сумма:</strong>{" "}
                                     {order.total_amount} KZT
                                   </p>
                                 </li>
@@ -621,7 +622,7 @@ const OrderManagementPage = () => {
                   className="px-4 py-2 cursor-pointer"
                   onClick={() => handleSort("order_id")}
                 >
-                  Order ID{" "}
+                  Номер заказа{" "}
                   {sortColumn === "order_id"
                     ? sortDirection === "asc"
                       ? "▲"
@@ -632,7 +633,7 @@ const OrderManagementPage = () => {
                   className="px-4 py-2 cursor-pointer"
                   onClick={() => handleSort("customer.name")}
                 >
-                  Customer Name{" "}
+                  Имя клиента{" "}
                   {sortColumn === "customer.name"
                     ? sortDirection === "asc"
                       ? "▲"
@@ -643,7 +644,7 @@ const OrderManagementPage = () => {
                   className="px-4 py-2 cursor-pointer"
                   onClick={() => handleSort("school")}
                 >
-                  School{" "}
+                  Школа{" "}
                   {sortColumn === "school"
                     ? sortDirection === "asc"
                       ? "▲"
@@ -654,7 +655,7 @@ const OrderManagementPage = () => {
                   className="px-4 py-2 cursor-pointer"
                   onClick={() => handleSort("grade")}
                 >
-                  Grade{" "}
+                  Класс{" "}
                   {sortColumn === "grade"
                     ? sortDirection === "asc"
                       ? "▲"
@@ -665,7 +666,7 @@ const OrderManagementPage = () => {
                   className="px-4 py-2 cursor-pointer"
                   onClick={() => handleSort("letter")}
                 >
-                  Letter{" "}
+                  Литер{" "}
                   {sortColumn === "letter"
                     ? sortDirection === "asc"
                       ? "▲"
@@ -676,7 +677,7 @@ const OrderManagementPage = () => {
                   className="px-4 py-2 cursor-pointer"
                   onClick={() => handleSort("status")}
                 >
-                  Status{" "}
+                  Статус заказа{" "}
                   {sortColumn === "status"
                     ? sortDirection === "asc"
                       ? "▲"
@@ -687,7 +688,7 @@ const OrderManagementPage = () => {
                   className="px-4 py-2 cursor-pointer"
                   onClick={() => handleSort("total_amount")}
                 >
-                  Total Amount{" "}
+                  Общая сумма{" "}
                   {sortColumn === "total_amount"
                     ? sortDirection === "asc"
                       ? "▲"
@@ -701,7 +702,7 @@ const OrderManagementPage = () => {
               {filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="text-center py-4">
-                    No orders available.
+                    Нет заказов для отображения.
                   </td>
                 </tr>
               ) : (
@@ -721,7 +722,7 @@ const OrderManagementPage = () => {
                         onClick={() => setSelectedOrder(order)}
                         className="px-2 py-1 bg-blue-500 text-white rounded"
                       >
-                        View
+                        Подробнее
                       </button>
                     </td>
                   </tr>
@@ -736,34 +737,34 @@ const OrderManagementPage = () => {
         <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
           <div className="bg-white p-10 rounded-lg shadow-lg max-w-3xl w-full">
             <h2 className="text-2xl font-bold mb-4">
-              Order Details: {selectedOrder.order_id}
+              Детали заказа: {selectedOrder.order_id}
             </h2>
             <p className="text-lg">
-              <strong>Customer:</strong> {selectedOrder.customer.name}
+              <strong>Клиент:</strong> {selectedOrder.customer.name}
             </p>
             <p className="text-lg">
-              <strong>Phone:</strong> {selectedOrder.customer.phone}
+              <strong>Телефон:</strong> {selectedOrder.customer.phone}
             </p>
             <p className="text-lg">
               <strong>Email:</strong> {selectedOrder.customer.email}
             </p>
 
             <p>
-              <strong>Total Amount:</strong> {selectedOrder.total_amount} KZT
+              <strong>Общая сумма:</strong> {selectedOrder.total_amount} KZT
             </p>
             <p>
-              <strong>Payment System:</strong> {selectedOrder.payment_system}
+              <strong>Система оплаты:</strong> {selectedOrder.payment_system}
             </p>
             <h3 className="text-lg font-bold mt-4">Products</h3>
             <table className="table-auto w-full mb-4">
               <thead>
                 <tr>
-                  <th className="px-4 py-2">Product</th>
-                  <th className="px-4 py-2">Price</th>
-                  <th className="px-4 py-2">Quantity</th>
-                  <th className="px-4 py-2">Amount</th>
-                  <th className="px-4 py-2">Assembled</th>
-                  <th className="px-4 py-2">Options</th>
+                  <th className="px-4 py-2">Продукт</th>
+                  <th className="px-4 py-2">Цена</th>
+                  <th className="px-4 py-2">Количество</th>
+                  <th className="px-4 py-2">Сумма</th>
+                  <th className="px-4 py-2">Собран</th>
+                  <th className="px-4 py-2">Опции</th>
                 </tr>
               </thead>
               <tbody>
@@ -804,9 +805,9 @@ const OrderManagementPage = () => {
               rel="noopener noreferrer"
               className="text-blue-500 underline"
             >
-              Send WhatsApp message
+              Отправить сообщение WhatsApp
             </a>
-            <h3 className="text-lg font-bold mt-4">Change Status</h3>
+            <h3 className="text-lg font-bold mt-4">Сменить статус заказа</h3>
             <select
               value={selectedOrder.status}
               onChange={(e) =>
@@ -816,7 +817,7 @@ const OrderManagementPage = () => {
             >
               {statuses.map((status) => (
                 <option key={status.name} value={status.name}>
-                  {status.emoji} {status.name}
+                  {status.emoji} {status.russian}
                 </option>
               ))}
             </select>
@@ -824,13 +825,13 @@ const OrderManagementPage = () => {
               onClick={closeOrderModal}
               className="mt-4 mr-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 px-4 rounded-lg hover:from-purple-600 hover:to-pink-600"
             >
-              Close
+              Закрыть
             </button>
             <button
               onClick={() => setIsEmailModalOpen(true)}
               className="mt-4 mr-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-2 px-4 rounded-lg hover:from-yellow-600 hover:to-orange-600"
             >
-              Send Email
+              Отправить Email
             </button>
             <button
               onClick={() =>
@@ -857,12 +858,12 @@ const OrderManagementPage = () => {
               {selectedOrder.status === statuses[statuses.length - 1].name ||
               selectedOrder.status === "canceled"
                 ? "No further steps"
-                : `Next step ➡️ ${
+                : `Изменить статус ➡️ ${
                     statuses[
                       statuses.findIndex(
                         (status) => status.name === selectedOrder.status
                       ) + 1
-                    ]?.name
+                    ]?.russian
                   }`}
             </button>
             {alert && (
@@ -870,7 +871,7 @@ const OrderManagementPage = () => {
                 className="p-4 mb-4 mt-4 text-sm text-green-400 rounded-lg bg-green-50 border border-green-200"
                 role="alert"
               >
-                <span className="font-medium">Email sent successfully to </span>{" "}
+                <span className="font-medium">Письмо успешно отправлено </span>{" "}
                 <strong>{selectedOrder.customer.email}</strong>
               </div>
             )}
@@ -881,14 +882,14 @@ const OrderManagementPage = () => {
       {isEmailModalOpen && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-            <h2 className="text-2xl font-bold mb-4">Send Email</h2>
+            <h2 className="text-2xl font-bold mb-4">Отправить письмо</h2>
 
             <div className="mb-4">
               <label
                 className="block text-gray-700 font-bold mb-2"
                 htmlFor="to"
               >
-                To:
+                Кому:
               </label>
               <input
                 id="to"
@@ -904,13 +905,13 @@ const OrderManagementPage = () => {
                 className="block text-gray-700 font-bold mb-2"
                 htmlFor="subject"
               >
-                Subject:
+                Тема:
               </label>
               <input
                 id="subject"
                 type="text"
                 className="w-full p-2 border rounded-lg"
-                value={`nis-wear.kz(Order id: ${selectedOrder.order_id})`}
+                value={`nis-wear.kz(Номер заказа: ${selectedOrder.order_id})`}
                 readOnly
               />
             </div>
@@ -920,7 +921,7 @@ const OrderManagementPage = () => {
                 className="block text-gray-700 font-bold mb-2"
                 htmlFor="body"
               >
-                Body:
+                Сообщение:
               </label>
               <textarea
                 id="body"
@@ -937,7 +938,7 @@ const OrderManagementPage = () => {
                 onClick={() => setIsEmailModalOpen(false)}
                 className="mr-4 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600"
               >
-                Close
+                Закрыть
               </button>
 
               <button
@@ -945,7 +946,7 @@ const OrderManagementPage = () => {
                   try {
                     const response = sendEmail(
                       selectedOrder.customer.email,
-                      `nis-wear.kz(Order id: ${selectedOrder.order_id})`,
+                      `nis-wear.kz(Номер заказа: ${selectedOrder.order_id})`,
                       emailBody,
                       localStorage.getItem("access_token")
                     );
@@ -962,7 +963,7 @@ const OrderManagementPage = () => {
                 }}
                 className="bg-gradient-to-r from-green-500 to-blue-500 text-white py-2 px-4 rounded-lg hover:from-green-600 hover:to-blue-600"
               >
-                Send
+                Отправить
               </button>
             </div>
           </div>

@@ -17,7 +17,10 @@ root.render(
       <Route path="/" element={<MainPage />} />
       <Route path="/login" element={<LoginPage />} />{" "}
       <Route path="/orders" element={<OrderManagementPage />} />{" "}
-      <Route path="/tracking" element={<OrderTrackingPage />} />{" "}
+      <Route
+        path="/tracking/:trackingOrderId?"
+        element={<OrderTrackingPage />}
+      />{" "}
       <Route path="*" element={<Loader />} />
       {/* Example additional route */}
     </Routes>

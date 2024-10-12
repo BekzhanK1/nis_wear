@@ -15,14 +15,14 @@ const LoginPage = () => {
     try {
       await getToken(username, password);
       setIsError(false);
-      setMessage("Login successful, redirecting...");
+      setMessage("Успешный вход, перенаправление...");
       setTimeout(() => {
         navigate("/orders");
       }, 2000);
     } catch (error) {
       console.error("Error fetching token:", error);
       setIsError(true);
-      setMessage("Invalid credentials");
+      setMessage("Неверные учетные данные");
     } finally {
       console.log("IsError: ", isError);
     }
@@ -32,7 +32,7 @@ const LoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="bg-white p-10 rounded-lg shadow-2xl w-full max-w-md transform transition-transform duration-500 hover:-translate-y-1">
         <h2 className="text-3xl font-bold mb-8 text-center text-indigo-700">
-          Welcome Back
+          Войти в систему
         </h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-6">
@@ -40,7 +40,7 @@ const LoginPage = () => {
               className="block text-gray-700 text-sm font-semibold mb-2"
               htmlFor="username"
             >
-              Username
+              Имя пользователя
             </label>
             <input
               id="username"
@@ -58,7 +58,7 @@ const LoginPage = () => {
               className="block text-gray-700 text-sm font-semibold mb-2"
               htmlFor="password"
             >
-              Password
+              Пароль
             </label>
             <input
               id="password"
@@ -76,7 +76,7 @@ const LoginPage = () => {
               type="submit"
               className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 ease-in-out transform hover:-translate-y-1"
             >
-              Sign In
+              Войти
             </button>
           </div>
         </form>

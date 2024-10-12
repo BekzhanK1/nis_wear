@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import dayjs from "dayjs";
 import { trackingOrder } from "../utils/apiService";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 const OrderTrackingPage = () => {
   const [orderId, setOrderId] = useState("");
@@ -10,23 +10,30 @@ const OrderTrackingPage = () => {
   const [isError, setIsError] = useState(false);
 
   const navigate = useNavigate();
+  const { trackingOrderId } = useParams();
 
   const statuses = {
-    new: "Order Placed 🆕",
-    paid: "Payment Received 💵",
-    processing: "Processing Order 🔄",
-    shipped: "Order Shipped 📦",
-    delivered: "Delivered ✅",
-    canceled: "Canceled ❌",
+    new: "Заказ принят 🆕",
+    paid: "Оплата получена 💵",
+    processing: "В процессе сборки 🔄",
+    shipped: "Заказ отправлен 📦",
+    delivered: "Доставлен ✅",
+    canceled: "Отменен ❌",
   };
+  useEffect(() => {
+    if (trackingOrderId !== undefined) {
+      handleTrackOrder(trackingOrderId);
+    }
+  }, [trackingOrderId]);
 
-  const handleTrackOrder = async () => {
+  const handleTrackOrder = async (id = orderId) => {
     setLoading(true);
     setIsError(false);
 
     try {
       // API call to get order details by order ID
-      const response = await trackingOrder(orderId);
+      console.log("Tracking order ID:", id);
+      const response = await trackingOrder(id);
 
       setOrderDetails(response); // Set order details from API response
       setIsError(false);
@@ -53,18 +60,16 @@ const OrderTrackingPage = () => {
         className="px-4 py-2 bg-blue-500 text-white rounded-lg"
         onClick={goToMainPage}
       >
-        Back ⬅️
+        Назад ⬅️
       </button>
       <h1 className="text-4xl font-bold mb-8 text-indigo-700 text-center drop-shadow-lg">
-        Track Your Order
+        Отследить заказ
       </h1>
       <div className="bg-white p-10 rounded-lg shadow-xl max-w-xl mx-auto transition-transform transform hover:-translate-y-1 duration-500">
-        <h2 className="text-3xl font-bold mb-6 text-gray-800">
-          Enter your Order ID
-        </h2>
+        <h2 className="text-3xl font-bold mb-6 text-gray-800">Номер заказа</h2>
         <input
           type="number"
-          value={orderId}
+          value={orderId || trackingOrderId}
           onChange={(e) => setOrderId(e.target.value)}
           placeholder="Order ID"
           className="w-full p-4 border-2 border-blue-300 rounded-lg mb-6 bg-gradient-to-r from-indigo-50 to-white focus:outline-none focus:ring-4 focus:ring-indigo-300 shadow-lg hover:shadow-2xl transition-all duration-500 ease-in-out transform hover:-translate-y-1"
@@ -73,7 +78,7 @@ const OrderTrackingPage = () => {
           onClick={handleTrackOrder}
           className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-4 px-6 rounded-lg hover:from-purple-600 hover:to-indigo-600 hover:shadow-lg transition-all duration-500 ease-in-out transform hover:-translate-y-1"
         >
-          Track Order
+          Отследить заказ
         </button>
       </div>
 
@@ -88,10 +93,10 @@ const OrderTrackingPage = () => {
       {!loading && orderDetails && (
         <div className="mt-10 bg-white p-8 rounded-lg shadow-xl max-w-2xl mx-auto transition-transform transform hover:-translate-y-1 duration-500">
           <h3 className="text-2xl font-bold mb-4 text-green-600 drop-shadow-md">
-            Order Status
+            Данные заказа
           </h3>
           <p className="text-lg mb-4">
-            Status:{" "}
+            Статус:{" "}
             <span className="font-semibold text-indigo-600">
               {statuses[orderDetails.status]}
             </span>
@@ -99,26 +104,26 @@ const OrderTrackingPage = () => {
           {orderDetails.status !== "shipped" &&
             orderDetails.status !== "delivered" && (
               <p className="text-lg mb-4">
-                Shipping date:{" "}
+                Дата отправки:{" "}
                 <span className="font-semibold text-indigo-600">
                   {dayjs(orderDetails.shipping_date).format("DD-MM-YYYY")}
                 </span>
               </p>
             )}
           <p className="text-lg mb-4">
-            School of delivery:{" "}
+            Школа доставки:{" "}
             <span className="font-semibold text-indigo-600">
               {orderDetails.school}
             </span>
           </p>
           <p className="text-lg mb-4">
-            Total Amount:{" "}
+            Общая сумма:{" "}
             <span className="font-semibold text-indigo-600">
               {orderDetails.total_amount} ₸
             </span>
           </p>
           {/* Display all status changes */}
-          <h3 className="text-2xl font-bold mb-4">Status Changes</h3>
+          <h3 className="text-2xl font-bold mb-4">История статусов</h3>
           <ul className="list-disc list-inside">
             {orderDetails.status_changes.map((change) => (
               <li key={change.id} className="mb-2">
@@ -127,7 +132,7 @@ const OrderTrackingPage = () => {
               </li>
             ))}
           </ul>
-          <h3 className="text-2xl font-bold mb-4">Products</h3>
+          <h3 className="text-2xl font-bold mb-4">Товары</h3>
           <ul>
             {orderDetails.products.map((product, index) => (
               <li
@@ -144,15 +149,15 @@ const OrderTrackingPage = () => {
                     </span>
                   </div>
                   <div className="text-sm">
-                    <span className="font-semibold">Quantity: </span>
+                    <span className="font-semibold">Количество: </span>
                     {product.quantity}
                   </div>
                   <div className="text-sm">
-                    <span className="font-semibold">Price: </span>
+                    <span className="font-semibold">Цена: </span>
                     {product.price} ₸
                   </div>
                   <div className="text-sm">
-                    <span className="font-semibold">Amount: </span>
+                    <span className="font-semibold">Сумма: </span>
                     {product.amount} ₸
                   </div>
                 </div>
@@ -160,7 +165,7 @@ const OrderTrackingPage = () => {
                 {/* Include options if they exist */}
                 {product.options.length > 0 && (
                   <div className="mt-4">
-                    <h4 className="font-semibold text-indigo-600">Options:</h4>
+                    <h4 className="font-semibold text-indigo-600">Опции:</h4>
                     <ul className="ml-4 mt-2 space-y-1">
                       {product.options.map((option) => (
                         <li
@@ -177,7 +182,7 @@ const OrderTrackingPage = () => {
             ))}
           </ul>
           <p className="text-lg mt-4 text-gray-600">
-            Do you have any questions? Contact us:{" "}
+            Есть какие то вопросы? Свяжитесь с нами:{" "}
             <span className="text-indigo-500 font-bold">
               support@example.com
             </span>
@@ -188,7 +193,7 @@ const OrderTrackingPage = () => {
       {/* Show error if no order found */}
       {!loading && isError && (
         <div className="mt-8 bg-red-100 p-6 rounded-lg shadow-xl max-w-md mx-auto text-red-700 animate-pulse">
-          <p>No order found for ID: {orderId}</p>
+          <p>Не найден заказ с номером: {orderId}</p>
         </div>
       )}
     </div>
