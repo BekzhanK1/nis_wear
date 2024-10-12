@@ -1,12 +1,15 @@
 import React, { useState } from "react";
 import dayjs from "dayjs";
 import { trackingOrder } from "../utils/apiService";
+import { useNavigate } from "react-router-dom";
 
 const OrderTrackingPage = () => {
   const [orderId, setOrderId] = useState("");
   const [loading, setLoading] = useState(false);
   const [orderDetails, setOrderDetails] = useState(null);
   const [isError, setIsError] = useState(false);
+
+  const navigate = useNavigate();
 
   const statuses = {
     new: "Order Placed 🆕",
@@ -40,9 +43,18 @@ const OrderTrackingPage = () => {
       setIsError(false);
     }, 5000);
   };
+  const goToMainPage = () => {
+    navigate("/");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+      <button
+        className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+        onClick={goToMainPage}
+      >
+        Back ⬅️
+      </button>
       <h1 className="text-4xl font-bold mb-8 text-indigo-700 text-center drop-shadow-lg">
         Track Your Order
       </h1>

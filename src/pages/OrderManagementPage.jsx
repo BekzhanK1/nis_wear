@@ -10,11 +10,16 @@ import dayjs from "dayjs";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import Loader from "./Loader";
+import Calendar from "react-calendar";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const OrderManagementPage = () => {
+  const [currentTime, setCurrentTime] = useState(new Date());
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [emailBody, setEmailBody] = useState("");
@@ -24,6 +29,8 @@ const OrderManagementPage = () => {
   const [sortColumn, setSortColumn] = useState(null); // For sorting
   const [sortDirection, setSortDirection] = useState("asc"); // For sorting direction
   const [searchQuery, setSearchQuery] = useState(""); // New search state
+  const [showCalendar, setShowCalendar] = useState(false); // Control calendar visibility
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const statuses = [
     { name: "canceled", emoji: "❌" },
     { name: "new", emoji: "🆕" },
@@ -68,6 +75,9 @@ const OrderManagementPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date()); // Update the time with the current date and time
+    }, 1000);
     const token = localStorage.getItem("access_token");
 
     if (!token) {
@@ -100,6 +110,7 @@ const OrderManagementPage = () => {
         setError("Error fetching orders");
         setIsLoading(false);
       });
+    return () => clearInterval(timer);
   }, [activeTab, selectedSchool, selectedGrade, selectedLetter, isPayed]); // Refetch orders when activeTab changes
 
   const filteredOrders = orders.filter(
@@ -107,6 +118,37 @@ const OrderManagementPage = () => {
       order.order_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.customer.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const refreshOrders = async () => {
+    setIsRefreshing(true);
+    const shippingDateMap = {
+      activeOrders: "closest",
+      nextShippingOrders: "next",
+      previousOrders: "previous",
+    };
+
+    await fetchOrders(
+      localStorage.getItem("access_token"),
+      shippingDateMap[activeTab],
+      selectedSchool,
+      selectedGrade,
+      selectedLetter,
+      isPayed
+    )
+      .then((data) => {
+        setOrders(data);
+        setIsLoading(false);
+        toast.success("Orders refreshed successfully!");
+      })
+      .catch((error) => {
+        toast.error("Error refreshing orders!");
+        setError("Error fetching orders");
+        setIsLoading(false);
+      })
+      .finally(() => {
+        setIsRefreshing(false);
+      });
+  };
 
   const generateWhatsAppLink = (phone, orderId) => {
     const baseUrl = "https://wa.me/";
@@ -190,6 +232,7 @@ const OrderManagementPage = () => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
     XLSX.writeFile(workbook, `${new Date()}-orders.xlsx`);
+    toast.success("Downloaded excel successfully!");
   };
 
   const handleStatusChange = async (orderId, newStatus) => {
@@ -242,6 +285,24 @@ const OrderManagementPage = () => {
     }
   };
 
+  const goToMainPage = () => {
+    navigate("/");
+  };
+
+  const goToWhatsApp = () => {
+    const width = 375; // typical phone width
+    const height = 667; // typical phone height
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+
+    // Open a new window with Web WhatsApp with specified width and height
+    window.open(
+      "https://web.whatsapp.com/",
+      "_blank",
+      `toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width=${width}, height=${height}, top=${top}, left=${left}`
+    );
+  };
+
   const handleViewToggle = () => {
     setViewMode(viewMode === "kanban" ? "table" : "kanban");
   };
@@ -251,6 +312,47 @@ const OrderManagementPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 md:p-8">
+      <div className="flex justify-between items-center w-full">
+        <button
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+          onClick={goToMainPage}
+        >
+          Back ⬅️
+        </button>
+
+        <div className="ml-auto">
+          <button
+            className="px-4 py-2 bg-green-600 text-white rounded-lg mr-2"
+            onClick={goToWhatsApp}
+          >
+            Open Web WhatsApp
+          </button>
+          <span
+            onClick={() => setShowCalendar(!showCalendar)} // Toggle calendar visibility
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg border border-gray-300 shadow-md cursor-pointer hover:bg-blue-100 hover:text-blue-700"
+          >
+            {currentTime.toLocaleDateString()}{" "}
+            {currentTime.toLocaleTimeString()}
+          </span>
+
+          {/* Conditionally Render the Calendar */}
+          {showCalendar && (
+            <div className="absolute mt-2 bg-white shadow-lg p-6 rounded-lg z-50">
+              <Calendar
+                onChange={(date) => {
+                  setSelectedDate(date);
+                  setShowCalendar(false);
+                }}
+                value={selectedDate}
+                next2Label={null}
+                prev2Label={null}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+      <ToastContainer />
+
       <h1 className="text-3xl font-bold mb-4 text-blue-700 text-center">
         Order Management
       </h1>
@@ -288,10 +390,10 @@ const OrderManagementPage = () => {
           Previous Orders
         </button>
       </div>
-      <div className="mb-4">
+      <div className="mb-4 flex justify-center">
         <input
           type="text"
-          className="border p-2 rounded-lg w-full"
+          className="border p-2 rounded-lg w-full md:w-1/2" // Adjust width on larger screens
           placeholder="Search by Order ID or Customer Name"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -299,77 +401,137 @@ const OrderManagementPage = () => {
       </div>
 
       {/* Filters */}
-      <div className="mb-4">
+      <div className="mb-4 md:flex md:items-center md:space-x-4">
         {/* School Select */}
-        <select
-          className="border p-2 rounded-lg"
-          value={selectedSchool}
-          onChange={(e) => setSelectedSchool(e.target.value)}
-        >
-          <option value="">Select School</option>
-          {Object.keys(schools).map((id) => (
-            <option key={id} value={id}>
-              {schools[id]}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-col md:flex-row md:items-center">
+          <label className="text-gray-700 font-medium mr-2">School</label>
+          <select
+            className="border p-2 rounded-lg w-full md:w-auto bg-white focus:ring-2 focus:ring-blue-500"
+            value={selectedSchool}
+            onChange={(e) => setSelectedSchool(e.target.value)}
+          >
+            <option value="">Select School</option>
+            {Object.keys(schools).map((id) => (
+              <option key={id} value={id}>
+                {schools[id]}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Grade Select */}
-        <select
-          className="border p-2 rounded-lg ml-2"
-          value={selectedGrade}
-          onChange={(e) => {
-            setSelectedGrade(e.target.value);
-            setSelectedLetter(""); // Reset letter when grade changes
-          }}
-        >
-          <option value="">Select Grade</option>
-          {grades.map((grade) => (
-            <option key={grade} value={grade}>
-              {grade}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-col md:flex-row md:items-center">
+          <label className="text-gray-700 font-medium mr-2">Grade</label>
+          <select
+            className="border p-2 rounded-lg w-full md:w-auto bg-white focus:ring-2 focus:ring-blue-500"
+            value={selectedGrade}
+            onChange={(e) => {
+              setSelectedGrade(e.target.value);
+              setSelectedLetter(""); // Reset letter when grade changes
+            }}
+          >
+            <option value="">Select Grade</option>
+            {grades.map((grade) => (
+              <option key={grade} value={grade}>
+                {grade}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Letter Select */}
-        <select
-          className="border p-2 rounded-lg ml-2"
-          value={selectedLetter}
-          onChange={(e) => setSelectedLetter(e.target.value)}
-          disabled={!selectedGrade}
-        >
-          <option value="">Select Letter</option>
-          {letters.map((letter) => (
-            <option key={letter} value={letter}>
-              {letter}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-col md:flex-row md:items-center">
+          <label className="text-gray-700 font-medium mr-2">Letter</label>
+          <select
+            className="border p-2 rounded-lg w-full md:w-auto bg-white focus:ring-2 focus:ring-blue-500"
+            value={selectedLetter}
+            onChange={(e) => setSelectedLetter(e.target.value)}
+            disabled={!selectedGrade}
+          >
+            <option value="">Select Letter</option>
+            {letters.map((letter) => (
+              <option key={letter} value={letter}>
+                {letter}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        {/* Payed Checkbox */}
-        <label className="ml-4">
-          <input
-            type="checkbox"
-            checked={isPayed === true}
-            onChange={() => setIsPayed((prev) => (prev === true ? null : true))}
-          />
-          Payed
-        </label>
-        <label className="ml-4">
-          <input
-            type="checkbox"
-            checked={isPayed === false}
-            onChange={() =>
-              setIsPayed((prev) => (prev === false ? null : false))
-            }
-          />
-          Unpaid
-        </label>
+        {/* Payed and Unpaid Checkboxes */}
+        <div className="flex items-center space-x-2">
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              className="mr-2 h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-2 focus:ring-blue-500"
+              checked={isPayed === true}
+              onChange={() =>
+                setIsPayed((prev) => (prev === true ? null : true))
+              }
+            />
+            Payed
+          </label>
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              className="mr-2 h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-2 focus:ring-blue-500"
+              checked={isPayed === false}
+              onChange={() =>
+                setIsPayed((prev) => (prev === false ? null : false))
+              }
+            />
+            Unpaid
+          </label>
+          <div className="flex items-center space-x-2">
+            <button
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:ring-2 focus:ring-red-500"
+              onClick={() => {
+                setSelectedSchool(null);
+                setSelectedGrade("");
+                setSelectedLetter("");
+                setIsPayed(null);
+              }}
+            >
+              Reset Filters
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="mb-4 text-center">
         <button
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+          className="px-5 py-2 bg-orange-500 text-white rounded-lg"
+          onClick={refreshOrders}
+        >
+          {isRefreshing ? (
+            <>
+              <svg
+                className="animate-spin h-5 w-5 mr-2 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                ></path>
+              </svg>
+              Proccessing
+            </>
+          ) : (
+            "Refresh Orders"
+          )}
+        </button>
+        <button
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg ml-2"
           onClick={handleViewToggle}
         >
           Switch to {viewMode === "kanban" ? "Table View" : "Kanban View"}
